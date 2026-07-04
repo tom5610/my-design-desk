@@ -1,0 +1,724 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`deterministic export codegen > generates stable React/Tailwind package files 1`] = `
+[
+  {
+    "content": "{
+  "assets": [
+    {
+      "outputPath": "public/assets/demo-preview-placeholder.png",
+      "source": "/assets/demo-preview-placeholder.png"
+    }
+  ]
+}
+
+",
+    "path": "assets/asset-manifest.json",
+  },
+  {
+    "content": "{
+  "comments": {},
+  "components": {
+    "component_ai-builder-suite_primary-button_0001": {
+      "id": "component_ai-builder-suite_primary-button_0001",
+      "name": "Primary Button",
+      "rootNodeId": "node_ai-builder-suite_button-component-root_0005"
+    }
+  },
+  "createdAt": "2026-07-04T00:00:00.000Z",
+  "id": "design_ai-builder-suite",
+  "name": "AI Builder Suite",
+  "nodes": {
+    "node_ai-builder-suite_body-copy_0004": {
+      "constraints": {
+        "horizontal": "left",
+        "vertical": "top"
+      },
+      "geometry": {
+        "height": 72,
+        "rotation": 0,
+        "width": 520,
+        "x": 164,
+        "y": 360
+      },
+      "id": "node_ai-builder-suite_body-copy_0004",
+      "kind": "Text",
+      "locked": false,
+      "name": "Hero supporting copy",
+      "parentId": "node_ai-builder-suite_hero-group_0002",
+      "text": "A local-first editor seed for collaboration, version history, replay, and generated React output.",
+      "textStyle": {
+        "color": "#344054",
+        "fontFamily": "Inter",
+        "fontSize": 16,
+        "fontWeight": 500,
+        "id": "style_ai-builder-suite_body-text_0003",
+        "letterSpacing": 0,
+        "lineHeight": 24,
+        "name": "Body"
+      },
+      "visible": true
+    },
+    "node_ai-builder-suite_button-component-root_0005": {
+      "children": [
+        "node_ai-builder-suite_primary-button-master_0006"
+      ],
+      "componentId": "component_ai-builder-suite_primary-button_0001",
+      "constraints": {
+        "horizontal": "left",
+        "vertical": "top"
+      },
+      "geometry": {
+        "height": 48,
+        "rotation": 0,
+        "width": 176,
+        "x": 120,
+        "y": 800
+      },
+      "id": "node_ai-builder-suite_button-component-root_0005",
+      "kind": "ComponentRoot",
+      "locked": false,
+      "name": "Primary button component",
+      "parentId": "node_ai-builder-suite_landing-frame_0001",
+      "visible": false
+    },
+    "node_ai-builder-suite_button-instance_0011": {
+      "componentId": "component_ai-builder-suite_primary-button_0001",
+      "constraints": {
+        "horizontal": "left",
+        "vertical": "top"
+      },
+      "geometry": {
+        "height": 48,
+        "rotation": 0,
+        "width": 160,
+        "x": 356,
+        "y": 472
+      },
+      "id": "node_ai-builder-suite_button-instance_0011",
+      "kind": "ComponentInstance",
+      "locked": false,
+      "name": "Secondary CTA instance",
+      "overrides": {
+        "label": "View replay"
+      },
+      "parentId": "node_ai-builder-suite_hero-group_0002",
+      "visible": true
+    },
+    "node_ai-builder-suite_dashboard-back-button_0015": {
+      "children": [],
+      "constraints": {
+        "horizontal": "left",
+        "vertical": "top"
+      },
+      "geometry": {
+        "height": 48,
+        "rotation": 0,
+        "width": 188,
+        "x": 1680,
+        "y": 560
+      },
+      "id": "node_ai-builder-suite_dashboard-back-button_0015",
+      "kind": "Button",
+      "label": "Back to landing",
+      "locked": false,
+      "name": "Back to landing button",
+      "parentId": "node_ai-builder-suite_dashboard-frame_0012",
+      "style": {
+        "fills": [
+          {
+            "color": "#0f766e",
+            "kind": "solid"
+          }
+        ],
+        "opacity": 1,
+        "radius": 8,
+        "shadows": []
+      },
+      "textStyle": {
+        "color": "#ffffff",
+        "fontFamily": "Inter",
+        "fontSize": 16,
+        "fontWeight": 700,
+        "id": "style_ai-builder-suite_body-text_0003",
+        "letterSpacing": 0,
+        "lineHeight": 24,
+        "name": "Body"
+      },
+      "visible": true
+    },
+    "node_ai-builder-suite_dashboard-card_0014": {
+      "constraints": {
+        "horizontal": "left",
+        "vertical": "top"
+      },
+      "geometry": {
+        "height": 260,
+        "rotation": 0,
+        "width": 520,
+        "x": 1680,
+        "y": 256
+      },
+      "id": "node_ai-builder-suite_dashboard-card_0014",
+      "kind": "Rectangle",
+      "locked": false,
+      "name": "Dashboard metrics card",
+      "parentId": "node_ai-builder-suite_dashboard-frame_0012",
+      "style": {
+        "fills": [
+          {
+            "color": "#ffffff",
+            "kind": "solid"
+          }
+        ],
+        "opacity": 1,
+        "radius": 16,
+        "shadows": [
+          {
+            "blur": 40,
+            "color": "rgba(17, 24, 39, 0.26)",
+            "spread": -18,
+            "x": 0,
+            "y": 18
+          }
+        ],
+        "stroke": {
+          "color": "#d0d5dd",
+          "width": 1
+        }
+      },
+      "visible": true
+    },
+    "node_ai-builder-suite_dashboard-frame_0012": {
+      "children": [
+        "node_ai-builder-suite_dashboard-title_0013",
+        "node_ai-builder-suite_dashboard-card_0014",
+        "node_ai-builder-suite_dashboard-back-button_0015"
+      ],
+      "constraints": {
+        "horizontal": "left",
+        "vertical": "top"
+      },
+      "geometry": {
+        "height": 960,
+        "rotation": 0,
+        "width": 1440,
+        "x": 1560,
+        "y": 0
+      },
+      "id": "node_ai-builder-suite_dashboard-frame_0012",
+      "kind": "Frame",
+      "locked": false,
+      "name": "AI Builder dashboard frame",
+      "parentId": null,
+      "style": {
+        "fills": [
+          {
+            "color": "#f0fdfa",
+            "kind": "solid"
+          }
+        ],
+        "opacity": 1,
+        "shadows": []
+      },
+      "visible": true
+    },
+    "node_ai-builder-suite_dashboard-title_0013": {
+      "constraints": {
+        "horizontal": "left",
+        "vertical": "top"
+      },
+      "geometry": {
+        "height": 72,
+        "rotation": 0,
+        "width": 640,
+        "x": 1680,
+        "y": 144
+      },
+      "id": "node_ai-builder-suite_dashboard-title_0013",
+      "kind": "Text",
+      "locked": false,
+      "name": "Dashboard title",
+      "parentId": "node_ai-builder-suite_dashboard-frame_0012",
+      "text": "Prototype destination dashboard",
+      "textStyle": {
+        "color": "#111827",
+        "fontFamily": "Inter",
+        "fontSize": 40,
+        "fontWeight": 700,
+        "id": "style_ai-builder-suite_heading-text_0004",
+        "letterSpacing": 0,
+        "lineHeight": 48,
+        "name": "Heading"
+      },
+      "visible": true
+    },
+    "node_ai-builder-suite_headline_0003": {
+      "constraints": {
+        "horizontal": "left",
+        "vertical": "top"
+      },
+      "geometry": {
+        "height": 156,
+        "rotation": 0,
+        "width": 620,
+        "x": 160,
+        "y": 176
+      },
+      "id": "node_ai-builder-suite_headline_0003",
+      "kind": "Text",
+      "locked": false,
+      "name": "Hero headline",
+      "parentId": "node_ai-builder-suite_hero-group_0002",
+      "text": "Prototype, replay, and export deterministic design ops.",
+      "textStyle": {
+        "color": "#111827",
+        "fontFamily": "Inter",
+        "fontSize": 48,
+        "fontWeight": 700,
+        "id": "style_ai-builder-suite_heading-text_0004",
+        "letterSpacing": 0,
+        "lineHeight": 56,
+        "name": "Heading"
+      },
+      "visible": true
+    },
+    "node_ai-builder-suite_hero-group_0002": {
+      "children": [
+        "node_ai-builder-suite_headline_0003",
+        "node_ai-builder-suite_body-copy_0004",
+        "node_ai-builder-suite_primary-button_0007",
+        "node_ai-builder-suite_metrics-chart_0008",
+        "node_ai-builder-suite_spark-icon_0009",
+        "node_ai-builder-suite_local-preview-image_0010",
+        "node_ai-builder-suite_button-instance_0011"
+      ],
+      "constraints": {
+        "horizontal": "left",
+        "vertical": "top"
+      },
+      "geometry": {
+        "height": 620,
+        "rotation": 0,
+        "width": 1200,
+        "x": 120,
+        "y": 116
+      },
+      "id": "node_ai-builder-suite_hero-group_0002",
+      "kind": "Group",
+      "locked": false,
+      "name": "Hero panel",
+      "parentId": "node_ai-builder-suite_landing-frame_0001",
+      "visible": true
+    },
+    "node_ai-builder-suite_landing-frame_0001": {
+      "children": [
+        "node_ai-builder-suite_hero-group_0002",
+        "node_ai-builder-suite_button-component-root_0005"
+      ],
+      "constraints": {
+        "horizontal": "left",
+        "vertical": "top"
+      },
+      "geometry": {
+        "height": 960,
+        "rotation": 0,
+        "width": 1440,
+        "x": 0,
+        "y": 0
+      },
+      "id": "node_ai-builder-suite_landing-frame_0001",
+      "kind": "Frame",
+      "locked": false,
+      "name": "AI Builder landing page",
+      "parentId": null,
+      "style": {
+        "fills": [
+          {
+            "color": "#f8fafc",
+            "kind": "solid"
+          }
+        ],
+        "opacity": 1,
+        "shadows": []
+      },
+      "visible": true
+    },
+    "node_ai-builder-suite_local-preview-image_0010": {
+      "alt": "Preview of generated design output",
+      "constraints": {
+        "horizontal": "left",
+        "vertical": "top"
+      },
+      "geometry": {
+        "height": 120,
+        "rotation": 0,
+        "width": 280,
+        "x": 900,
+        "y": 484
+      },
+      "id": "node_ai-builder-suite_local-preview-image_0010",
+      "kind": "Image",
+      "locked": false,
+      "name": "Local preview image",
+      "parentId": "node_ai-builder-suite_hero-group_0002",
+      "src": "/assets/demo-preview-placeholder.png",
+      "style": {
+        "fills": [
+          {
+            "color": "#ffffff",
+            "kind": "solid"
+          }
+        ],
+        "opacity": 1,
+        "radius": 16,
+        "shadows": [
+          {
+            "blur": 40,
+            "color": "rgba(17, 24, 39, 0.26)",
+            "spread": -18,
+            "x": 0,
+            "y": 18
+          }
+        ],
+        "stroke": {
+          "color": "#d0d5dd",
+          "width": 1
+        }
+      },
+      "visible": true
+    },
+    "node_ai-builder-suite_metrics-chart_0008": {
+      "chartType": "bar",
+      "constraints": {
+        "horizontal": "left",
+        "vertical": "top"
+      },
+      "geometry": {
+        "height": 260,
+        "rotation": 0,
+        "width": 360,
+        "x": 820,
+        "y": 184
+      },
+      "id": "node_ai-builder-suite_metrics-chart_0008",
+      "kind": "ChartPlaceholder",
+      "locked": false,
+      "name": "Metrics preview",
+      "parentId": "node_ai-builder-suite_hero-group_0002",
+      "style": {
+        "fills": [
+          {
+            "color": "#ffffff",
+            "kind": "solid"
+          }
+        ],
+        "opacity": 1,
+        "radius": 16,
+        "shadows": [
+          {
+            "blur": 40,
+            "color": "rgba(17, 24, 39, 0.26)",
+            "spread": -18,
+            "x": 0,
+            "y": 18
+          }
+        ],
+        "stroke": {
+          "color": "#d0d5dd",
+          "width": 1
+        }
+      },
+      "visible": true
+    },
+    "node_ai-builder-suite_primary-button_0007": {
+      "children": [],
+      "constraints": {
+        "horizontal": "left",
+        "vertical": "top"
+      },
+      "geometry": {
+        "height": 48,
+        "rotation": 0,
+        "width": 176,
+        "x": 164,
+        "y": 472
+      },
+      "id": "node_ai-builder-suite_primary-button_0007",
+      "kind": "Button",
+      "label": "Start editing",
+      "locked": false,
+      "name": "Start editing button",
+      "parentId": "node_ai-builder-suite_hero-group_0002",
+      "style": {
+        "fills": [
+          {
+            "color": "#111827",
+            "kind": "solid"
+          }
+        ],
+        "opacity": 1,
+        "radius": 8,
+        "shadows": []
+      },
+      "textStyle": {
+        "color": "#ffffff",
+        "fontFamily": "Inter",
+        "fontSize": 16,
+        "fontWeight": 700,
+        "id": "style_ai-builder-suite_body-text_0003",
+        "letterSpacing": 0,
+        "lineHeight": 24,
+        "name": "Body"
+      },
+      "visible": true
+    },
+    "node_ai-builder-suite_primary-button-master_0006": {
+      "children": [],
+      "constraints": {
+        "horizontal": "left",
+        "vertical": "top"
+      },
+      "geometry": {
+        "height": 48,
+        "rotation": 0,
+        "width": 176,
+        "x": 120,
+        "y": 800
+      },
+      "id": "node_ai-builder-suite_primary-button-master_0006",
+      "kind": "Button",
+      "label": "Start editing",
+      "locked": false,
+      "name": "Primary button master",
+      "parentId": "node_ai-builder-suite_button-component-root_0005",
+      "style": {
+        "fills": [
+          {
+            "color": "#111827",
+            "kind": "solid"
+          }
+        ],
+        "opacity": 1,
+        "radius": 8,
+        "shadows": []
+      },
+      "textStyle": {
+        "color": "#ffffff",
+        "fontFamily": "Inter",
+        "fontSize": 16,
+        "fontWeight": 700,
+        "id": "style_ai-builder-suite_body-text_0003",
+        "letterSpacing": 0,
+        "lineHeight": 24,
+        "name": "Body"
+      },
+      "visible": true
+    },
+    "node_ai-builder-suite_spark-icon_0009": {
+      "color": "#0f766e",
+      "constraints": {
+        "horizontal": "left",
+        "vertical": "top"
+      },
+      "geometry": {
+        "height": 48,
+        "rotation": 0,
+        "width": 48,
+        "x": 824,
+        "y": 484
+      },
+      "id": "node_ai-builder-suite_spark-icon_0009",
+      "kind": "Icon",
+      "locked": false,
+      "name": "Spark icon",
+      "parentId": "node_ai-builder-suite_hero-group_0002",
+      "svgPath": "M12 2l2.8 6.2L21 11l-6.2 2.8L12 20l-2.8-6.2L3 11l6.2-2.8L12 2z",
+      "visible": true
+    }
+  },
+  "ops": [],
+  "prototypeLinks": {},
+  "rootIds": [
+    "node_ai-builder-suite_landing-frame_0001",
+    "node_ai-builder-suite_dashboard-frame_0012"
+  ],
+  "schemaVersion": 1,
+  "snapshots": {},
+  "styles": {
+    "colors": {
+      "style_ai-builder-suite_ink_0002": {
+        "id": "style_ai-builder-suite_ink_0002",
+        "name": "Ink",
+        "value": "#111827"
+      },
+      "style_ai-builder-suite_primary-teal_0001": {
+        "id": "style_ai-builder-suite_primary-teal_0001",
+        "name": "Primary Teal",
+        "value": "#0f766e"
+      }
+    },
+    "text": {
+      "style_ai-builder-suite_body-text_0003": {
+        "color": "#344054",
+        "fontFamily": "Inter",
+        "fontSize": 16,
+        "fontWeight": 500,
+        "id": "style_ai-builder-suite_body-text_0003",
+        "letterSpacing": 0,
+        "lineHeight": 24,
+        "name": "Body"
+      },
+      "style_ai-builder-suite_heading-text_0004": {
+        "color": "#111827",
+        "fontFamily": "Inter",
+        "fontSize": 48,
+        "fontWeight": 700,
+        "id": "style_ai-builder-suite_heading-text_0004",
+        "letterSpacing": 0,
+        "lineHeight": 56,
+        "name": "Heading"
+      }
+    }
+  },
+  "updatedAt": "2026-07-04T00:00:00.000Z"
+}
+
+",
+    "path": "design.json",
+  },
+  {
+    "content": "<!doctype html>
+<html lang="en">
+  <head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>Design Desk Export</title></head>
+  <body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body>
+</html>
+",
+    "path": "index.html",
+  },
+  {
+    "content": "{
+  "dependencies": {
+    "@vitejs/plugin-react": "^6.0.3",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "vite": "^8.1.3"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.7.2"
+  },
+  "private": true,
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite --host 127.0.0.1"
+  },
+  "type": "module"
+}
+
+",
+    "path": "package.json",
+  },
+  {
+    "content": "import { AIBuilderLandingPage } from "./frames/AIBuilderLandingPage";
+import { AIBuilderDashboardFrame } from "./frames/AIBuilderDashboardFrame";
+
+export function App() {
+  return (
+    <main className="flex min-h-screen flex-col gap-8 bg-slate-100 p-8">
+      <AIBuilderLandingPage />
+      <AIBuilderDashboardFrame />
+    </main>
+  );
+}
+
+export default App;
+",
+    "path": "src/App.tsx",
+  },
+  {
+    "content": "import type { CSSProperties } from "react";
+
+export function PrimaryButton({ style }: { style?: CSSProperties }) {
+  return (
+    <div className="relative overflow-hidden" style={{ width: 176, height: 48, ...style }}>
+      <button className="absolute flex items-center justify-center text-center" style={{ position: "absolute", left: 0, top: 0, width: 176, height: 48, backgroundColor: "#111827", borderRadius: 8, opacity: 1, color: "#ffffff", fontFamily: "Inter", fontSize: 16, fontWeight: 700 }} type="button">
+        {"Start editing"}
+      </button>
+    </div>
+  );
+}
+",
+    "path": "src/components/PrimaryButton.tsx",
+  },
+  {
+    "content": "export function AIBuilderDashboardFrame() {
+  return (
+    <section className="relative overflow-hidden" style={{ width: 1440, height: 960, backgroundColor: "#f0fdfa" }}>
+      <p className="absolute m-0 whitespace-pre-wrap" style={{ position: "absolute", left: 120, top: 144, width: 640, height: 72, color: "#111827", fontFamily: "Inter", fontSize: 40, fontWeight: 700, lineHeight: 48, letterSpacing: 0 }}>{"Prototype destination dashboard"}</p>
+      <div className="absolute" style={{ position: "absolute", left: 120, top: 256, width: 520, height: 260, backgroundColor: "#ffffff", borderRadius: 16, opacity: 1, border: "1px solid #d0d5dd", boxShadow: "0px 18px 40px -18px rgba(17, 24, 39, 0.26)" }}></div>
+      <button className="absolute flex items-center justify-center text-center" style={{ position: "absolute", left: 120, top: 560, width: 188, height: 48, backgroundColor: "#0f766e", borderRadius: 8, opacity: 1, color: "#ffffff", fontFamily: "Inter", fontSize: 16, fontWeight: 700 }} type="button">
+        {"Back to landing"}
+      </button>
+    </section>
+  );
+}
+",
+    "path": "src/frames/AIBuilderDashboardFrame.tsx",
+  },
+  {
+    "content": "export function AIBuilderLandingPage() {
+  return (
+    <section className="relative overflow-hidden" style={{ width: 1440, height: 960, backgroundColor: "#f8fafc" }}>
+      <p className="absolute m-0 whitespace-pre-wrap" style={{ position: "absolute", left: 160, top: 176, width: 620, height: 156, color: "#111827", fontFamily: "Inter", fontSize: 48, fontWeight: 700, lineHeight: 56, letterSpacing: 0 }}>{"Prototype, replay, and export deterministic design ops."}</p>
+      <p className="absolute m-0 whitespace-pre-wrap" style={{ position: "absolute", left: 164, top: 360, width: 520, height: 72, color: "#344054", fontFamily: "Inter", fontSize: 16, fontWeight: 500, lineHeight: 24, letterSpacing: 0 }}>{"A local-first editor seed for collaboration, version history, replay, and generated React output."}</p>
+      <button className="absolute flex items-center justify-center text-center" style={{ position: "absolute", left: 164, top: 472, width: 176, height: 48, backgroundColor: "#111827", borderRadius: 8, opacity: 1, color: "#ffffff", fontFamily: "Inter", fontSize: 16, fontWeight: 700 }} type="button">
+        {"Start editing"}
+      </button>
+      <div className="absolute" style={{ position: "absolute", left: 820, top: 184, width: 360, height: 260, backgroundColor: "#ffffff", borderRadius: 16, opacity: 1, border: "1px solid #d0d5dd", boxShadow: "0px 18px 40px -18px rgba(17, 24, 39, 0.26)" }}>
+        <span className="absolute rounded" style={{ left: 42, bottom: 42, width: 42, height: 42, backgroundColor: "#0f766e", opacity: 0.22 }} />
+        <span className="absolute rounded" style={{ left: 112, bottom: 42, width: 42, height: 64, backgroundColor: "#0f766e", opacity: 0.34 }} />
+        <span className="absolute rounded" style={{ left: 182, bottom: 42, width: 42, height: 86, backgroundColor: "#0f766e", opacity: 0.46 }} />
+        <span className="absolute rounded" style={{ left: 252, bottom: 42, width: 42, height: 108, backgroundColor: "#0f766e", opacity: 0.58 }} />
+      </div>
+      <svg className="absolute overflow-visible" style={{ position: "absolute", left: 824, top: 484, width: 48, height: 48 }} viewBox="0 0 24 24"><path d={"M12 2l2.8 6.2L21 11l-6.2 2.8L12 20l-2.8-6.2L3 11l6.2-2.8L12 2z"} fill={"#0f766e"} /></svg>
+      <div className="absolute overflow-hidden" style={{ position: "absolute", left: 900, top: 484, width: 280, height: 120, backgroundColor: "#ffffff", borderRadius: 16, opacity: 1, border: "1px solid #d0d5dd", boxShadow: "0px 18px 40px -18px rgba(17, 24, 39, 0.26)" }}>
+        <img alt={"Preview of generated design output"} className="size-full object-cover" src={"/assets/demo-preview-placeholder.png"} />
+      </div>
+      <button className="absolute flex items-center justify-center text-center" style={{ position: "absolute", left: 356, top: 472, width: 160, height: 48, backgroundColor: "#111827", borderRadius: 8, opacity: 1, color: "#ffffff", fontFamily: "Inter", fontSize: 16, fontWeight: 700 }} type="button">
+        {"View replay"}
+      </button>
+    </section>
+  );
+}
+",
+    "path": "src/frames/AIBuilderLandingPage.tsx",
+  },
+  {
+    "content": "@tailwind base;
+@tailwind components;
+@tailwind utilities;
+",
+    "path": "src/index.css",
+  },
+  {
+    "content": "import React from "react";
+import { createRoot } from "react-dom/client";
+import { App } from "./App";
+import "./index.css";
+
+createRoot(document.getElementById("root")!).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>,
+);
+",
+    "path": "src/main.tsx",
+  },
+  {
+    "content": "export default { content: ["./index.html", "./src/**/*.{ts,tsx}"], theme: { extend: {} }, plugins: [] };
+",
+    "path": "tailwind.config.js",
+  },
+]
+`;

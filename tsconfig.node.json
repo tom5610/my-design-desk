@@ -25,6 +25,7 @@
     "server",
     "src/collab/messages.ts",
     "src/demo",
+    "src/export",
     "src/model",
     "src/ops",
     "src/serialization",

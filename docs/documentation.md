@@ -2,9 +2,9 @@
 
 ## Current State
 
-- Current milestone: 20 - Deterministic React/Tailwind Export CLI
-- Previous milestone: 19 - Prototype Links And Preview Navigation
-- Status: Milestone 19 complete locally; verification passed and ready for Milestone 20 after commit
+- Current milestone: 21 - Demo Projects, Polish, Performance, Final Hardening
+- Previous milestone: 20 - Deterministic React/Tailwind Export CLI
+- Status: Milestone 20 complete locally; verification passed and ready for Milestone 21 after commit
 - Source spec: `docs/prompt.md`
 - Milestone contract: `docs/plans.md`
 - Runbook: `docs/implement.md`
@@ -599,26 +599,63 @@ Notes:
 
 ### 20. Deterministic React/Tailwind Export CLI
 
+Status: complete
+
+Scope completed:
+
+- Replaced the export scaffold with a local CLI that reads `--input <design.json>`, validates the design, and writes a deterministic export package under `--out <dir>`.
+- Added pure export codegen that emits canonical `design.json`, Vite/React package files, Tailwind setup, root-frame React components, reusable generated component files, and an asset manifest.
+- Added local asset reference collection and best-effort copying for image nodes without fetching remote assets.
+- Added deterministic codegen snapshot tests and TSX parse coverage for generated component/frame files.
+- Added CLI smoke coverage by exporting the same starter design input to two output directories and comparing them.
+- Preserved existing untracked `METHOD.md`; it remained outside the Milestone 20 commit scope.
+
+Verification:
+
+- `npm run lint` passed.
+- `npm run typecheck` initially failed on readonly tuple typing in export style helpers; fixed by using readonly style-entry tuples.
+- `npm run typecheck` passed after the fix.
+- `npm test` passed: 20 test files, 50 tests, including export snapshot determinism and generated TSX parse coverage.
+- `npm run build` passed with Vite `8.1.3`.
+- Temporary smoke setup with `tsx -e` first failed on top-level await in CJS eval output; reran with an async wrapper.
+- Temporary smoke setup then hit the known sandbox `tsx` IPC pipe `EPERM`; reran with approved elevated `./node_modules/.bin/tsx` to write `/tmp/design-desk-export-smoke/input.json`.
+- `npm run export -- --input /tmp/design-desk-export-smoke/input.json --out /tmp/design-desk-export-smoke/out-a` initially hit the same sandbox `tsx` IPC `EPERM`; reran with approved elevated `npm run export` and passed.
+- `npm run export -- --input /tmp/design-desk-export-smoke/input.json --out /tmp/design-desk-export-smoke/out-b` passed.
+- `diff -ru /tmp/design-desk-export-smoke/out-a /tmp/design-desk-export-smoke/out-b` passed with no differences.
+- Export smoke produced `design.json`, `package.json`, `tailwind.config.js`, `index.html`, `src/App.tsx`, `src/main.tsx`, `src/index.css`, two frame components, one reusable component, and `assets/asset-manifest.json`.
+
+Notes:
+
+- The generated export package intentionally uses the canonical model as input and does not depend on browser/editor state.
+- Missing local assets do not fail export; they are listed in the asset manifest with `copied: false`, while existing local assets are copied into the deterministic output path.
+
+## Next Milestone
+
+### 21. Demo Projects, Polish, Performance, Final Hardening
+
 Planned scope:
 
-- JSON export.
-- React/Tailwind component package codegen.
-- Asset copying.
-- Component generation.
-- CLI script.
+- Tracked AI builder suite starter files.
+- Local generated assets.
+- Polish, toasts, shortcut modal, and demo banner.
+- Performance guardrails.
+- Architecture documentation finalization.
 
 Planned verification:
 
-- Codegen snapshot tests.
-- CLI smoke with `npm run export -- --input <design.json> --out <dir>`.
 - `npm run lint`.
 - `npm run typecheck`.
-- Existing regression tests as needed.
+- `npm test`.
+- `npm run build`.
+- `npm run test:e2e`.
+- Manual two-tab demo check.
+- Export CLI smoke.
 
 Known risks:
 
-- Export must stay deterministic for identical input bytes.
-- Generated components should reuse the same scene/component model instead of duplicating renderer semantics.
+- Final polish must not bypass the deterministic scene, operation, replay, sync, or export spine.
+- Demo assets must remain local and tracked.
+- Final architecture documentation should describe the implemented system rather than restating the plan.
 - Existing untracked `METHOD.md` remains outside milestone scope and will not be staged.
 
 ## Decisions Log
@@ -652,6 +689,7 @@ Known risks:
 | 2026-07-04 | Store snapshots as deterministic document slices instead of full recursive design files. | Snapshot restore needs diffable document state without recursively embedding snapshot history or transient ops. |
 | 2026-07-04 | Reconstruct replay from committed redo transactions before building persisted replay UI. | The existing operation spine already proves deterministic reconstruction and branch behavior without adding another event format. |
 | 2026-07-04 | Keep prototype preview state transient and serialize only prototype links. | Preview navigation must demo frame-to-frame flow without polluting export, replay, or canonical scene data. |
+| 2026-07-04 | Generate export files from the canonical scene model instead of renderer DOM output. | The CLI must work without the UI and produce deterministic React/Tailwind files from serialized input. |
 
 ## Blockers
 
@@ -659,4 +697,4 @@ None.
 
 ## Handoff
 
-Start Milestone 20 by following `docs/implement.md`. Reread the active milestone, add deterministic React/Tailwind export CLI coverage, and preserve the untracked `METHOD.md` unless the user explicitly asks to include it.
+Start Milestone 21 by following `docs/implement.md`. Reread the active milestone, finalize demo assets, polish, performance guardrails, architecture documentation, full verification, and preserve the untracked `METHOD.md` unless the user explicitly asks to include it.
