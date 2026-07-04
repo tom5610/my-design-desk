@@ -1,5 +1,5 @@
-import type { NodeId } from "../model/ids";
-import type { Constraints, Geometry, SceneNode } from "../model/scene";
+import type { ComponentId, NodeId } from "../model/ids";
+import type { ComponentDefinition, ComponentRootNode, Constraints, Geometry, SceneNode } from "../model/scene";
 import type { NodeStyle } from "../model/styles";
 
 export type OperationMetadata = {
@@ -53,6 +53,14 @@ export type NodeUpdateConstraintsOperation = OperationMetadata & {
   };
 };
 
+export type NodeUpdateInstanceOverridesOperation = OperationMetadata & {
+  kind: "node.updateInstanceOverrides";
+  payload: {
+    nodeId: NodeId;
+    overrides: Record<string, string | number | boolean>;
+  };
+};
+
 export type NodeReparentOperation = OperationMetadata & {
   kind: "node.reparent";
   payload: {
@@ -86,16 +94,35 @@ export type NodeRestoreOperation = OperationMetadata & {
   };
 };
 
+export type ComponentCreateOperation = OperationMetadata & {
+  kind: "component.create";
+  payload: {
+    component: ComponentDefinition;
+    rootNode: ComponentRootNode;
+    index?: number;
+  };
+};
+
+export type ComponentDeleteOperation = OperationMetadata & {
+  kind: "component.delete";
+  payload: {
+    componentId: ComponentId;
+  };
+};
+
 export type DesignOperation =
   | NodeCreateOperation
   | NodeUpdateGeometryOperation
   | NodeUpdateStyleOperation
   | NodeUpdateMetaOperation
   | NodeUpdateConstraintsOperation
+  | NodeUpdateInstanceOverridesOperation
   | NodeReparentOperation
   | NodeReorderOperation
   | NodeDeleteOperation
-  | NodeRestoreOperation;
+  | NodeRestoreOperation
+  | ComponentCreateOperation
+  | ComponentDeleteOperation;
 
 export type Transaction = {
   id: string;

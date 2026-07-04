@@ -1,15 +1,17 @@
 import type { DesignFile, Fill, Geometry, NodeId, NodeStyle, SceneNode } from "../model";
+import { resolveComponentInstance } from "../model";
 
 function solidFill(fills: readonly Fill[]) {
   const fill = fills.find((candidate) => candidate.kind === "solid");
   return fill?.kind === "solid" ? fill.color : "#ffffff";
 }
 
-function commonNodeProps(node: SceneNode) {
+function commonNodeProps(node: SceneNode, selectionNodeId = node.id) {
   return {
-    "data-node-id": node.id,
+    "data-node-id": selectionNodeId,
     "data-node-kind": node.kind,
     "data-node-name": node.name,
+    "data-render-node-id": node.id,
   };
 }
 
@@ -27,12 +29,12 @@ function rectProps(geometry: Geometry, style: NodeStyle) {
   };
 }
 
-function renderChildren(design: DesignFile, nodeIds: readonly NodeId[]) {
-  return nodeIds.map((nodeId) => renderNode(design, nodeId));
+function renderChildren(design: DesignFile, nodes: Record<NodeId, SceneNode>, nodeIds: readonly NodeId[], selectionNodeId?: NodeId) {
+  return nodeIds.map((nodeId) => renderNodeFromMap(design, nodes, nodeId, selectionNodeId));
 }
 
-export function renderNode(design: DesignFile, nodeId: NodeId): React.ReactNode {
-  const node = design.nodes[nodeId];
+function renderNodeFromMap(design: DesignFile, nodes: Record<NodeId, SceneNode>, nodeId: NodeId, selectionNodeId?: NodeId): React.ReactNode {
+  const node = nodes[nodeId];
   if (!node || !node.visible) {
     return null;
   }
@@ -40,24 +42,24 @@ export function renderNode(design: DesignFile, nodeId: NodeId): React.ReactNode 
   switch (node.kind) {
     case "Frame":
       return (
-        <g key={node.id} {...commonNodeProps(node)}>
+        <g key={node.id} {...commonNodeProps(node, selectionNodeId)}>
           <rect {...rectProps(node.geometry, node.style)} />
-          {renderChildren(design, node.children)}
+          {renderChildren(design, nodes, node.children, selectionNodeId)}
         </g>
       );
     case "Group":
       return (
-        <g key={node.id} {...commonNodeProps(node)}>
-          {renderChildren(design, node.children)}
+        <g key={node.id} {...commonNodeProps(node, selectionNodeId)}>
+          {renderChildren(design, nodes, node.children, selectionNodeId)}
         </g>
       );
     case "Rectangle":
-      return <rect key={node.id} {...commonNodeProps(node)} {...rectProps(node.geometry, node.style)} />;
+      return <rect key={node.id} {...commonNodeProps(node, selectionNodeId)} {...rectProps(node.geometry, node.style)} />;
     case "Ellipse":
       return (
         <ellipse
           key={node.id}
-          {...commonNodeProps(node)}
+          {...commonNodeProps(node, selectionNodeId)}
           cx={node.geometry.x + node.geometry.width / 2}
           cy={node.geometry.y + node.geometry.height / 2}
           rx={node.geometry.width / 2}
@@ -72,7 +74,7 @@ export function renderNode(design: DesignFile, nodeId: NodeId): React.ReactNode 
       return (
         <line
           key={node.id}
-          {...commonNodeProps(node)}
+          {...commonNodeProps(node, selectionNodeId)}
           x1={node.start.x}
           y1={node.start.y}
           x2={node.end.x}
@@ -85,7 +87,7 @@ export function renderNode(design: DesignFile, nodeId: NodeId): React.ReactNode 
       return (
         <text
           key={node.id}
-          {...commonNodeProps(node)}
+          {...commonNodeProps(node, selectionNodeId)}
           x={node.geometry.x}
           y={node.geometry.y + node.textStyle.fontSize}
           fill={node.textStyle.color}
@@ -98,7 +100,7 @@ export function renderNode(design: DesignFile, nodeId: NodeId): React.ReactNode 
       );
     case "Image":
       return (
-        <g key={node.id} {...commonNodeProps(node)}>
+        <g key={node.id} {...commonNodeProps(node, selectionNodeId)}>
           <rect {...rectProps(node.geometry, node.style)} fill="#e0f2fe" />
           <text x={node.geometry.x + 16} y={node.geometry.y + 32} fill="#0369a1" fontSize={14} fontWeight={700}>
             Image
@@ -107,7 +109,7 @@ export function renderNode(design: DesignFile, nodeId: NodeId): React.ReactNode 
       );
     case "Button":
       return (
-        <g key={node.id} {...commonNodeProps(node)}>
+        <g key={node.id} {...commonNodeProps(node, selectionNodeId)}>
           <rect {...rectProps(node.geometry, node.style)} />
           <text
             x={node.geometry.x + node.geometry.width / 2}
@@ -119,14 +121,14 @@ export function renderNode(design: DesignFile, nodeId: NodeId): React.ReactNode 
           >
             {node.label}
           </text>
-          {renderChildren(design, node.children)}
+          {renderChildren(design, nodes, node.children, selectionNodeId)}
         </g>
       );
     case "Icon":
       return (
         <path
           key={node.id}
-          {...commonNodeProps(node)}
+          {...commonNodeProps(node, selectionNodeId)}
           d={node.svgPath}
           fill={node.color}
           transform={`translate(${node.geometry.x} ${node.geometry.y}) scale(${node.geometry.width / 24} ${node.geometry.height / 24})`}
@@ -134,7 +136,7 @@ export function renderNode(design: DesignFile, nodeId: NodeId): React.ReactNode 
       );
     case "ChartPlaceholder":
       return (
-        <g key={node.id} {...commonNodeProps(node)}>
+        <g key={node.id} {...commonNodeProps(node, selectionNodeId)}>
           <rect {...rectProps(node.geometry, node.style)} />
           {[0, 1, 2, 3].map((index) => (
             <rect
@@ -152,22 +154,36 @@ export function renderNode(design: DesignFile, nodeId: NodeId): React.ReactNode 
       );
     case "ComponentRoot":
       return (
-        <g key={node.id} {...commonNodeProps(node)}>
-          {renderChildren(design, node.children)}
+        <g key={node.id} {...commonNodeProps(node, selectionNodeId)}>
+          {renderChildren(design, nodes, node.children, selectionNodeId)}
         </g>
       );
-    case "ComponentInstance":
+    case "ComponentInstance": {
+      const resolved = resolveComponentInstance(design, node);
+      if (resolved) {
+        return (
+          <g key={node.id} {...commonNodeProps(node, selectionNodeId)}>
+            {renderChildren(design, resolved.nodes, resolved.childIds, node.id)}
+          </g>
+        );
+      }
+
       return (
-        <g key={node.id} {...commonNodeProps(node)}>
+        <g key={node.id} {...commonNodeProps(node, selectionNodeId)}>
           <rect x={node.geometry.x} y={node.geometry.y} width={node.geometry.width} height={node.geometry.height} rx={8} fill="#ffffff" stroke="#111827" />
           <text x={node.geometry.x + node.geometry.width / 2} y={node.geometry.y + 30} textAnchor="middle" fill="#111827" fontSize={16} fontWeight={700}>
             {String(node.overrides.label ?? "Instance")}
           </text>
         </g>
       );
+    }
   }
 }
 
+export function renderNode(design: DesignFile, nodeId: NodeId): React.ReactNode {
+  return renderNodeFromMap(design, design.nodes, nodeId);
+}
+
 export function SvgScene({ design }: { design: DesignFile }) {
-  return <>{renderChildren(design, design.rootIds)}</>;
+  return <>{renderChildren(design, design.nodes, design.rootIds)}</>;
 }

@@ -3,12 +3,15 @@ import { assertValidDesign } from "../model";
 import type { NodeStyle } from "../model/styles";
 import type {
   DesignOperation,
+  ComponentCreateOperation,
+  ComponentDeleteOperation,
   NodeCreateOperation,
   NodeDeleteOperation,
   NodeReorderOperation,
   NodeReparentOperation,
   NodeRestoreOperation,
   NodeUpdateGeometryOperation,
+  NodeUpdateInstanceOverridesOperation,
   NodeUpdateConstraintsOperation,
   NodeUpdateMetaOperation,
   NodeUpdateStyleOperation,
@@ -171,6 +174,22 @@ function updateConstraints(design: DesignFile, operation: NodeUpdateConstraintsO
   );
 }
 
+function updateInstanceOverrides(design: DesignFile, operation: NodeUpdateInstanceOverridesOperation): DesignFile {
+  const node = design.nodes[operation.payload.nodeId];
+  if (!node || node.kind !== "ComponentInstance") {
+    throw new Error(`Cannot update overrides for missing or non-instance node ${operation.payload.nodeId}`);
+  }
+
+  return replaceNode(
+    design,
+    {
+      ...node,
+      overrides: operation.payload.overrides,
+    },
+    operation.timestamp,
+  );
+}
+
 function reparentNode(design: DesignFile, operation: NodeReparentOperation): DesignFile {
   const node = design.nodes[operation.payload.nodeId];
   if (!node) {
@@ -306,6 +325,97 @@ function restoreNodes(design: DesignFile, operation: NodeRestoreOperation): Desi
   return nextDesign;
 }
 
+function createComponent(design: DesignFile, operation: ComponentCreateOperation): DesignFile {
+  const { component, rootNode, index } = operation.payload;
+
+  if (design.components[component.id]) {
+    throw new Error(`Cannot create duplicate component ${component.id}`);
+  }
+  if (design.nodes[rootNode.id]) {
+    throw new Error(`Cannot create duplicate component root ${rootNode.id}`);
+  }
+  if (component.rootNodeId !== rootNode.id) {
+    throw new Error(`Component ${component.id} root does not match created root node`);
+  }
+
+  const nodes: Record<NodeId, SceneNode> = {
+    ...design.nodes,
+    [rootNode.id]: rootNode,
+  };
+  let rootIds = design.rootIds;
+
+  if (rootNode.parentId === null) {
+    rootIds = insertAt(rootIds, rootNode.id, index);
+  } else {
+    const parent = nodes[rootNode.parentId];
+    if (!parent || !isContainerNode(parent)) {
+      throw new Error(`Cannot create component root under missing or non-container parent ${rootNode.parentId}`);
+    }
+    nodes[rootNode.parentId] = {
+      ...parent,
+      children: insertAt(parent.children, rootNode.id, index),
+    };
+  }
+
+  const nextDesign = {
+    ...design,
+    updatedAt: operation.timestamp,
+    rootIds,
+    nodes,
+    components: {
+      ...design.components,
+      [component.id]: component,
+    },
+  };
+  assertValidDesign(nextDesign);
+  return nextDesign;
+}
+
+function deleteComponent(design: DesignFile, operation: ComponentDeleteOperation): DesignFile {
+  const component = design.components[operation.payload.componentId];
+  if (!component) {
+    return design;
+  }
+
+  const root = design.nodes[component.rootNodeId];
+  if (!root) {
+    const components = { ...design.components };
+    delete components[operation.payload.componentId];
+    return {
+      ...design,
+      updatedAt: operation.timestamp,
+      components,
+    };
+  }
+
+  const deleteIds = new Set(collectSubtreeIds(design.nodes, root.id));
+  const nodes = Object.fromEntries(
+    (Object.entries(design.nodes) as [NodeId, SceneNode][]).filter(([nodeId]) => !deleteIds.has(nodeId)),
+  ) as Record<NodeId, SceneNode>;
+  const rootIds = design.rootIds.filter((rootId) => !deleteIds.has(rootId));
+
+  for (const [nodeId, candidate] of Object.entries(nodes) as [NodeId, SceneNode][]) {
+    if (isContainerNode(candidate)) {
+      nodes[nodeId] = {
+        ...candidate,
+        children: candidate.children.filter((childId) => !deleteIds.has(childId)),
+      };
+    }
+  }
+
+  const components = { ...design.components };
+  delete components[component.id];
+  const nextDesign = {
+    ...design,
+    updatedAt: operation.timestamp,
+    rootIds,
+    nodes,
+    components,
+  };
+  assertValidDesign(nextDesign);
+  return nextDesign;
+}
+
 export function applyOperation(design: DesignFile, operation: DesignOperation): DesignFile {
   switch (operation.kind) {
     case "node.create":
@@ -318,6 +428,8 @@ export function applyOperation(design: DesignFile, operation: DesignOperation): 
       return updateMeta(design, operation);
     case "node.updateConstraints":
       return updateConstraints(design, operation);
+    case "node.updateInstanceOverrides":
+      return updateInstanceOverrides(design, operation);
     case "node.reparent":
       return reparentNode(design, operation);
     case "node.reorder":
@@ -326,6 +438,10 @@ export function applyOperation(design: DesignFile, operation: DesignOperation): 
       return deleteNode(design, operation);
     case "node.restore":
       return restoreNodes(design, operation);
+    case "component.create":
+      return createComponent(design, operation);
+    case "component.delete":
+      return deleteComponent(design, operation);
   }
 }
 

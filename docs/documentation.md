@@ -2,9 +2,9 @@
 
 ## Current State
 
-- Current milestone: 13 - Components, Instances, Overrides, Detach
-- Previous milestone: 12 - Grouping, Locking, Ordering, Context Menu, Shortcuts
-- Status: ready for component system after verified grouping and ordering commands
+- Current milestone: 14 - Snapping, Alignment, And Spacing Guides
+- Previous milestone: 13 - Components, Instances, Overrides, Detach
+- Status: ready for snapping and guide work after verified component system
 - Source spec: `docs/prompt.md`
 - Milestone contract: `docs/plans.md`
 - Runbook: `docs/implement.md`
@@ -381,12 +381,46 @@ Notes:
 
 ### 13. Components, Instances, Overrides, Detach
 
+Status: complete
+
+Scope completed:
+
+- Added deterministic component model helpers for resolving instances from master component roots.
+- Added `component.create`, `component.delete`, and `node.updateInstanceOverrides` operations with inversion support.
+- Added component command helpers for create-from-selection, insert-instance, text/fill overrides, go-to-main selection, and detach.
+- Rendered component instances from their master nodes so master changes inherit through instances unless an override is present.
+- Added assets-panel component controls for create, insert, and go-to-main.
+- Added inspector controls for instance text/fill overrides, go-to-main, and detach.
+- Seeded the starter design with a real hidden master button and visible overridden instance.
+- Added component inheritance, serialization/replay, and detach unit tests.
+- Added Playwright component smoke for inserting, overriding, and detaching an instance.
+- Preserved existing untracked `METHOD.md`; it remained outside the Milestone 13 commit scope.
+
+Verification:
+
+- `npm run lint` initially failed on unused component-delete destructuring and redundant test casts.
+- `npm run typecheck` initially failed on component helper type imports, color typing, container narrowing, and one test fallback.
+- `npm test -- -u` passed and updated the intentional SVG renderer snapshot for inherited component rendering.
+- `npm run lint` passed after removing unused component-delete destructuring and redundant test casts.
+- `npm run typecheck` passed after tightening component helper types.
+- `npm test` passed: 14 test files, 36 tests.
+- `npm run build` passed with Vite `8.1.3`.
+- `npm run test:e2e` passed: 8 Playwright tests including component insert/override/detach smoke.
+
+Notes:
+
+- Component override keys currently support generic `text`, `label`, and `fill`, plus targeted `text:<nodeId>` and `fill:<nodeId>` forms for future richer inspectors.
+- Detach materializes resolved component output as normal nodes through `node.create` operations, so replay and serialization stay deterministic.
+
+### 14. Snapping, Alignment, And Spacing Guides
+
 Planned scope:
 
-- Create components from selection.
-- Insert component instances.
-- Support inherited component rendering with text/fill overrides.
-- Add go-to-main-component and detach instance command paths.
+- Snap-to-grid.
+- Alignment guides.
+- Spacing distribution guides.
+- Toggle controls.
+- Visual guide overlays.
 
 Planned verification:
 
@@ -394,14 +428,14 @@ Planned verification:
 - `npm run typecheck`
 - `npm test`
 - `npm run build`
-- Component inheritance tests.
-- Serialization tests.
-- Playwright component smoke.
+- `npm run test:e2e`
+- Snapping tests.
+- Playwright drag guide smoke.
 
 Known risks:
 
-- Component instance rendering can duplicate renderer logic if not built over scene model primitives.
-- Overrides must remain deterministic and serializable.
+- Drag and resize behavior is still shallow, so guide smoke may need to exercise keyboard or command-driven movement if pointer dragging is not yet implemented.
+- Guide overlays must not interfere with SVG hit-testing or selection.
 - Existing untracked `METHOD.md` remains outside milestone scope and will not be staged.
 
 ## Decisions Log
@@ -428,6 +462,7 @@ Known risks:
 | 2026-07-04 | Lift workspace scene state above canvas and panels. | Layers, canvas rendering, selection, and future inspector controls must operate on one shared scene model. |
 | 2026-07-04 | Route inspector edits through existing operation families. | Inspector UI should be another command surface over the deterministic scene model. |
 | 2026-07-04 | Keep context menu actions on command helpers. | Context UI must not mutate scene state outside the operation path. |
+| 2026-07-04 | Resolve instances from hidden component masters at render time. | Master inheritance, overrides, detach, serialization, and future export should share one deterministic component model. |
 
 ## Blockers
 
@@ -435,4 +470,4 @@ None.
 
 ## Handoff
 
-Start Milestone 13 by following `docs/implement.md`. Reread the active milestone, build component instances over the scene model, and preserve the untracked `METHOD.md` unless the user explicitly asks to include it.
+Start Milestone 14 by following `docs/implement.md`. Reread the active milestone, add snapping and guide math over the existing geometry/selection paths, and preserve the untracked `METHOD.md` unless the user explicitly asks to include it.

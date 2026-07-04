@@ -143,6 +143,20 @@ export function invertOperation(designBefore: DesignFile, operation: DesignOpera
         },
       };
     }
+    case "node.updateInstanceOverrides": {
+      const node = designBefore.nodes[operation.payload.nodeId];
+      if (!node || node.kind !== "ComponentInstance") {
+        throw new Error(`Cannot invert instance override update for missing instance ${operation.payload.nodeId}`);
+      }
+      return {
+        ...inverseMetadata(operation, designBefore.updatedAt),
+        kind: "node.updateInstanceOverrides",
+        payload: {
+          nodeId: node.id,
+          overrides: node.overrides,
+        },
+      };
+    }
     case "node.reparent": {
       const node = designBefore.nodes[operation.payload.nodeId];
       if (!node) {
@@ -191,6 +205,32 @@ export function invertOperation(designBefore: DesignFile, operation: DesignOpera
           nodeId: Object.keys(operation.payload.nodes)[0] as NodeId,
         },
       };
+    case "component.create":
+      return {
+        ...inverseMetadata(operation, designBefore.updatedAt),
+        kind: "component.delete",
+        payload: {
+          componentId: operation.payload.component.id,
+        },
+      };
+    case "component.delete": {
+      const component = designBefore.components[operation.payload.componentId];
+      if (!component) {
+        throw new Error(`Cannot invert component delete for missing component ${operation.payload.componentId}`);
+      }
+      const rootNode = designBefore.nodes[component.rootNodeId];
+      if (!rootNode || rootNode.kind !== "ComponentRoot") {
+        throw new Error(`Cannot invert component delete for missing root ${component.rootNodeId}`);
+      }
+      return {
+        ...inverseMetadata(operation, designBefore.updatedAt),
+        kind: "component.create",
+        payload: {
+          component,
+          rootNode,
+        },
+      };
+    }
   }
 }
 

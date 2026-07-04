@@ -54,6 +54,7 @@ export function createStarterDesign(): DesignFile {
   const headlineId = ids.node("headline");
   const bodyId = ids.node("body-copy");
   const buttonRootId = ids.node("button-component-root");
+  const masterButtonId = ids.node("primary-button-master");
   const buttonId = ids.node("primary-button");
   const chartId = ids.node("metrics-chart");
   const iconId = ids.node("spark-icon");
@@ -186,6 +187,25 @@ export function createStarterDesign(): DesignFile {
       geometry: { x: 120, y: 800, width: 176, height: 48, rotation: 0 },
       constraints: defaultConstraints,
       componentId: buttonComponentId,
+      children: [masterButtonId],
+    },
+    [masterButtonId]: {
+      id: masterButtonId,
+      kind: "Button",
+      name: "Primary button master",
+      parentId: buttonRootId,
+      locked: false,
+      visible: true,
+      geometry: { x: 120, y: 800, width: 176, height: 48, rotation: 0 },
+      constraints: defaultConstraints,
+      label: "Start editing",
+      style: {
+        fills: [{ kind: "solid", color: "#111827" }],
+        opacity: 1,
+        radius: 8,
+        shadows: [],
+      },
+      textStyle: { ...bodyText, color: "#ffffff", fontWeight: 700 },
       children: [],
     },
     [instanceId]: {

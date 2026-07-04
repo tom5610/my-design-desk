@@ -86,3 +86,20 @@ test("opens context menu and shortcut help", async ({ page }) => {
   await page.keyboard.press("?");
   await expect(page.getByTestId("shortcut-help")).toBeVisible();
 });
+
+test("edits and detaches component instances", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/");
+
+  await page.getByRole("button", { name: "Assets" }).click();
+  await page.getByRole("button", { name: "Insert Primary Button instance" }).click();
+  await expect(page.locator('[data-node-name="Primary Button instance"]')).toBeVisible();
+
+  await page.locator('[data-node-name="Secondary CTA instance"]').click();
+  await page.getByLabel("Instance text override").fill("Open replay");
+  await expect(page.getByText("Open replay")).toBeVisible();
+
+  await page.getByRole("button", { name: "Detach" }).click();
+  await expect(page.locator('[data-node-kind="ComponentInstance"][data-node-name="Secondary CTA instance"]')).toHaveCount(0);
+  await expect(page.getByText("Open replay")).toBeVisible();
+});

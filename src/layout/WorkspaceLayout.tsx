@@ -19,13 +19,19 @@ import { ModalShell } from "../ui/ModalShell";
 import { ToastStack } from "../ui/ToastStack";
 import { SvgCanvas } from "../canvas";
 import { createStarterDesign } from "../demo";
-import type { NodeId } from "../model";
+import { createDeterministicIdFactory, type ComponentId, type ComponentOverrides, type DesignFile, type NodeId } from "../model";
 import { createLayerMetaTransaction, createReorderTransaction, LayersPanel } from "../panels/layers";
 import { AssetsPanel } from "../panels/assets";
 import { InspectorPanel } from "../panels/inspector";
 import { selectOne, type SelectionState, emptySelection } from "../selection";
 import { commitTransaction, createHistoryState, type HistoryState } from "../store";
 import { createTransaction, type OperationMetadata } from "../ops";
+import {
+  createComponentFromSelectionTransaction,
+  createDetachInstanceTransaction,
+  createInsertInstanceTransaction,
+  createUpdateInstanceOverridesTransaction,
+} from "../commands";
 
 const tools = [
   { label: "Select", icon: MousePointer2, active: true },
@@ -40,12 +46,13 @@ export function WorkspaceLayout() {
   const [selection, setSelection] = useState<SelectionState>(emptySelection);
   const [leftTab, setLeftTab] = useState<"layers" | "assets">("layers");
   const opCounter = useRef(0);
+  const componentIds = useRef(createDeterministicIdFactory("workspace-components"));
   const design = history.present;
 
-  function metadata(kind: string): OperationMetadata {
+  function metadata(kind: string, index = 0): OperationMetadata {
     opCounter.current += 1;
     return {
-      opId: `layer_${kind}_${opCounter.current}`,
+      opId: `workspace_${kind}_${opCounter.current}_${index}`,
       sessionId: "local-demo",
       clientId: "local-client",
       actorId: "local-user",
@@ -60,6 +67,55 @@ export function WorkspaceLayout() {
     }
   }
 
+  function createComponentFromSelection() {
+    const componentId = componentIds.current.component("component");
+    const rootNodeId = componentIds.current.node("component-root");
+    const instanceId = componentIds.current.node("component-instance");
+    const transaction = createComponentFromSelectionTransaction(design, selection.selectedIds, componentId, rootNodeId, instanceId, (index) =>
+      metadata("component", index),
+    );
+    commit(transaction);
+    if (transaction.operations.length > 0) {
+      setSelection(selectOne(instanceId));
+      setLeftTab("assets");
+    }
+  }
+
+  function insertComponentInstance(componentId: ComponentId) {
+    const instanceId = componentIds.current.node("component-instance");
+    const transaction = createInsertInstanceTransaction(design, componentId, instanceId, metadata("component-insert"));
+    commit(transaction);
+    if (transaction.operations.length > 0) {
+      setSelection(selectOne(instanceId));
+    }
+  }
+
+  function goToMainComponent(componentId: ComponentId) {
+    const component = design.components[componentId];
+    if (component) {
+      setSelection(selectOne(component.rootNodeId));
+      setLeftTab("layers");
+    }
+  }
+
+  function goToMainFromInstance(nodeId: NodeId) {
+    const node = design.nodes[nodeId];
+    if (node?.kind === "ComponentInstance") {
+      goToMainComponent(node.componentId);
+    }
+  }
+
+  function detachInstance(nodeId: NodeId) {
+    const transaction = createDetachInstanceTransaction(design, nodeId, (hint) => componentIds.current.node(hint), (index) => metadata("component-detach", index));
+    const createdNodeId = transaction.operations.find((operation) => operation.kind === "node.create")?.payload.node.id;
+    commit(transaction);
+    setSelection(createdNodeId ? selectOne(createdNodeId) : emptySelection);
+  }
+
+  function updateInstanceOverrides(nodeId: NodeId, overrides: ComponentOverrides) {
+    commit(createUpdateInstanceOverridesTransaction(nodeId, overrides, metadata("component-override")));
+  }
+
   return (
     <main
       className="flex h-dvh min-h-[680px] flex-col overflow-hidden bg-desk-canvas text-desk-ink lg:flex-row"
@@ -69,6 +125,9 @@ export function WorkspaceLayout() {
         design={design}
         leftTab={leftTab}
         onReorder={(nodeId, direction) => commit(createReorderTransaction(design, nodeId, direction, metadata("reorder")))}
+        onCreateComponent={createComponentFromSelection}
+        onGoToMainComponent={goToMainComponent}
+        onInsertInstance={insertComponentInstance}
         onSelectTab={setLeftTab}
         onToggleLocked={(nodeId) => {
           const node = design.nodes[nodeId];
@@ -94,12 +153,15 @@ export function WorkspaceLayout() {
 
       <InspectorPanel
         design={design}
+        onDetachInstance={detachInstance}
+        onGoToMainComponent={goToMainFromInstance}
         onUpdateConstraints={(nodeId, constraints) =>
           commit(createTransaction("tx_update_constraints", "Update constraints", [{ ...metadata("constraints"), kind: "node.updateConstraints", payload: { nodeId, constraints } }]))
         }
         onUpdateGeometry={(nodeId, geometry) =>
           commit(createTransaction("tx_update_geometry", "Update geometry", [{ ...metadata("geometry"), kind: "node.updateGeometry", payload: { nodeId, geometry } }]))
         }
+        onUpdateInstanceOverrides={updateInstanceOverrides}
         onUpdateStyle={(nodeId, style) =>
           commit(createTransaction("tx_update_style", "Update style", [{ ...metadata("style"), kind: "node.updateStyle", payload: { nodeId, style } }]))
         }
@@ -115,14 +177,20 @@ function LeftPanel({
   design,
   leftTab,
   onReorder,
+  onCreateComponent,
+  onGoToMainComponent,
+  onInsertInstance,
   onSelectTab,
   onToggleLocked,
   onToggleVisible,
   selection,
   setSelection,
 }: {
-  design: ReturnType<typeof createStarterDesign>;
+  design: DesignFile;
   leftTab: "layers" | "assets";
+  onCreateComponent: () => void;
+  onGoToMainComponent: (componentId: ComponentId) => void;
+  onInsertInstance: (componentId: ComponentId) => void;
   onReorder: (nodeId: NodeId, direction: "up" | "down") => void;
   onSelectTab: (tab: "layers" | "assets") => void;
   onToggleLocked: (nodeId: NodeId) => void;
@@ -163,7 +231,13 @@ function LeftPanel({
           selection={selection}
         />
       ) : (
-        <AssetsPanel design={design} />
+        <AssetsPanel
+          canCreateComponent={selection.selectedIds.length > 0}
+          design={design}
+          onCreateComponent={onCreateComponent}
+          onGoToMainComponent={onGoToMainComponent}
+          onInsertInstance={onInsertInstance}
+        />
       )}
 
       <DemoProjectPicker />

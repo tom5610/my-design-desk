@@ -1,4 +1,6 @@
-import type { Constraints, DesignFile, Geometry, NodeId, NodeStyle, SceneNode } from "../../model";
+import { Component, LocateFixed, Unlink } from "lucide-react";
+
+import type { ComponentOverrides, Constraints, DesignFile, Geometry, NodeId, NodeStyle, SceneNode } from "../../model";
 
 type GeometryNode = Extract<SceneNode, { geometry: Geometry }>;
 type StyledNode = Extract<SceneNode, { style: NodeStyle }>;
@@ -15,12 +17,18 @@ export function InspectorPanel({
   design,
   onUpdateConstraints,
   onUpdateGeometry,
+  onUpdateInstanceOverrides,
   onUpdateStyle,
+  onDetachInstance,
+  onGoToMainComponent,
   selectedId,
 }: {
   design: DesignFile;
+  onDetachInstance: (nodeId: NodeId) => void;
+  onGoToMainComponent: (nodeId: NodeId) => void;
   onUpdateConstraints: (nodeId: NodeId, constraints: Constraints) => void;
   onUpdateGeometry: (nodeId: NodeId, geometry: Geometry) => void;
+  onUpdateInstanceOverrides: (nodeId: NodeId, overrides: ComponentOverrides) => void;
   onUpdateStyle: (nodeId: NodeId, style: NodeStyle) => void;
   selectedId: NodeId | null;
 }) {
@@ -42,11 +50,74 @@ export function InspectorPanel({
           {hasGeometry(node) ? (
             <GeometryEditor node={node} onUpdate={(geometry) => onUpdateGeometry(node.id, geometry)} />
           ) : null}
+          {node.kind === "ComponentInstance" ? (
+            <InstanceEditor
+              node={node}
+              onDetach={() => onDetachInstance(node.id)}
+              onGoToMain={() => onGoToMainComponent(node.id)}
+              onUpdate={(overrides) => onUpdateInstanceOverrides(node.id, overrides)}
+            />
+          ) : null}
           {hasStyle(node) ? <StyleEditor node={node} onUpdate={(style) => onUpdateStyle(node.id, style)} /> : null}
           <ConstraintsEditor node={node} onUpdate={(constraints) => onUpdateConstraints(node.id, constraints)} />
         </div>
       )}
     </aside>
+  );
+}
+
+function InstanceEditor({
+  node,
+  onDetach,
+  onGoToMain,
+  onUpdate,
+}: {
+  node: Extract<SceneNode, { kind: "ComponentInstance" }>;
+  onDetach: () => void;
+  onGoToMain: () => void;
+  onUpdate: (overrides: ComponentOverrides) => void;
+}) {
+  const text = String(node.overrides.text ?? node.overrides.label ?? "");
+  const fill = String(node.overrides.fill ?? "#111827");
+
+  return (
+    <section>
+      <h3 className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-desk-muted">
+        <Component size={14} aria-hidden="true" />
+        Instance
+      </h3>
+      <div className="space-y-2">
+        <label className="rounded border border-desk-line px-3 py-2">
+          <span className="block text-[11px] font-medium text-desk-muted">Text override</span>
+          <input
+            aria-label="Instance text override"
+            className="mt-1 w-full bg-transparent text-sm font-medium outline-none"
+            onChange={(event) => onUpdate({ ...node.overrides, label: event.target.value, text: event.target.value })}
+            value={text}
+          />
+        </label>
+        <label className="flex items-center justify-between rounded border border-desk-line px-3 py-2 text-sm">
+          Fill override
+          <input
+            aria-label="Instance fill override"
+            className="size-7"
+            onChange={(event) => onUpdate({ ...node.overrides, fill: `#${event.target.value.replace("#", "")}` })}
+            type="color"
+            value={fill.startsWith("#") ? fill : "#111827"}
+          />
+        </label>
+        <div className="grid grid-cols-2 gap-2">
+          <button className="flex items-center justify-center gap-1 rounded bg-slate-100 px-2 py-2 text-xs font-semibold hover:bg-slate-200" onClick={onGoToMain} type="button">
+            <LocateFixed size={13} aria-hidden="true" />
+            Main
+          </button>
+          <button className="flex items-center justify-center gap-1 rounded bg-slate-100 px-2 py-2 text-xs font-semibold hover:bg-slate-200" onClick={onDetach} type="button">
+            <Unlink size={13} aria-hidden="true" />
+            Detach
+          </button>
+        </div>
+      </div>
+    </section>
   );
 }
 

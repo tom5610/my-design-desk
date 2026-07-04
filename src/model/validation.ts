@@ -70,6 +70,10 @@ export function validateDesign(design: DesignFile): ValidationResult {
     if (isComponentRootNode(node) && !design.components[node.componentId]) {
       errors.push(`Component root ${nodeId} references missing component ${node.componentId}`);
     }
+
+    if (node.kind === "ComponentInstance" && !design.components[node.componentId]) {
+      errors.push(`Component instance ${nodeId} references missing component ${node.componentId}`);
+    }
   }
 
   for (const [componentId, component] of Object.entries(design.components)) {
@@ -82,6 +86,8 @@ export function validateDesign(design: DesignFile): ValidationResult {
       errors.push(`Component ${componentId} references missing root ${component.rootNodeId}`);
     } else if (!isComponentRootNode(rootNode)) {
       errors.push(`Component ${componentId} root is not a ComponentRoot node`);
+    } else if (rootNode.componentId !== component.id) {
+      errors.push(`Component ${componentId} root points at ${rootNode.componentId}`);
     }
   }
 
