@@ -2,9 +2,9 @@
 
 ## Current State
 
-- Current milestone: 18 - Replay Journal, Scrubber, Branch From Here
-- Previous milestone: 17 - Version History, Snapshots, Named Milestones
-- Status: ready for deterministic replay after verified local version history
+- Current milestone: 19 - Prototype Links And Preview Navigation
+- Previous milestone: 18 - Replay Journal, Scrubber, Branch From Here
+- Status: ready for prototype links after verified deterministic replay
 - Source spec: `docs/prompt.md`
 - Milestone contract: `docs/plans.md`
 - Runbook: `docs/implement.md`
@@ -534,18 +534,46 @@ Notes:
 - Snapshot restore preserves the snapshot timeline and records a before-restore snapshot for recovery.
 - Snapshot documents intentionally exclude transient presence and operation journal state.
 
+### 18. Replay Journal, Scrubber, Branch From Here
+
+Status: complete
+
+Scope completed:
+
+- Added deterministic replay helpers that reconstruct design state from the initial design and committed redo transactions.
+- Added replay labels for operation journal display.
+- Added branch-from-replay helper that creates a clean history state from a replay step.
+- Added replay panel with scrubber, step backward/forward, play/pause, speed control, current operation display, and branch action.
+- Wired branch-from-here to reset the workspace to the replayed state.
+- Added replay determinism and branch unit tests.
+- Added Playwright replay smoke for stepping back and branching from an earlier state.
+- Preserved existing untracked `METHOD.md`; it remained outside the Milestone 18 commit scope.
+
+Verification:
+
+- `npm run typecheck` passed.
+- `npm run lint` passed.
+- `npm test` passed with local socket permissions: 18 test files, 46 tests.
+- `npm run build` passed with Vite `8.1.3`.
+- `npm run test:e2e` passed with local browser/server permissions: 13 Playwright tests including replay smoke.
+
+Notes:
+
+- Replay currently uses the local committed history entries; future persisted replay can read server-sequenced operation journals from the same operation shape.
+- Branching creates a clean history from the replayed state and clears the current selection.
+
 ## Next Milestone
 
-### 18. Replay Journal, Scrubber, Branch From Here
+### 19. Prototype Links And Preview Navigation
 
 Planned scope:
 
-- Replay panel with play/pause.
-- Step forward/back.
-- Scrubber.
-- Speed controls.
-- Deterministic reconstruction.
-- Branch from here.
+- Link creation mode.
+- Hotspots.
+- Preview mode.
+- Back navigation.
+- Multiple frames.
+- Transition metadata.
 
 Planned verification:
 
@@ -554,14 +582,13 @@ Planned verification:
 - `npm test`
 - `npm run build`
 - `npm run test:e2e`
-- Replay determinism tests.
-- Branch tests.
-- Playwright replay smoke.
+- Prototype graph tests.
+- Playwright preview smoke.
 
 Known risks:
 
-- Replay must reconstruct from canonical operations without depending on current React state.
-- Branching should create a new restorable state without corrupting existing snapshots.
+- Prototype links must remain deterministic and serializable.
+- Preview navigation should not mutate the editor scene.
 - Existing untracked `METHOD.md` remains outside milestone scope and will not be staged.
 
 ## Decisions Log
@@ -593,6 +620,7 @@ Known risks:
 | 2026-07-04 | Store comments as canonical design threads and render pins from that model. | Comments must persist, replay, undo, and export from the same deterministic document state as nodes. |
 | 2026-07-04 | Keep presence ephemeral and sync document edits through committed operations. | Collaboration state should feel live without polluting replay, export, snapshots, or canonical serialization. |
 | 2026-07-04 | Store snapshots as deterministic document slices instead of full recursive design files. | Snapshot restore needs diffable document state without recursively embedding snapshot history or transient ops. |
+| 2026-07-04 | Reconstruct replay from committed redo transactions before building persisted replay UI. | The existing operation spine already proves deterministic reconstruction and branch behavior without adding another event format. |
 
 ## Blockers
 
@@ -600,4 +628,4 @@ None.
 
 ## Handoff
 
-Start Milestone 18 by following `docs/implement.md`. Reread the active milestone, reconstruct replay state from canonical operations, and preserve the untracked `METHOD.md` unless the user explicitly asks to include it.
+Start Milestone 19 by following `docs/implement.md`. Reread the active milestone, add deterministic prototype link operations and preview navigation, and preserve the untracked `METHOD.md` unless the user explicitly asks to include it.

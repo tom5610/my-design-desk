@@ -187,3 +187,18 @@ test("creates and restores a local version snapshot", async ({ page }) => {
   await page.getByLabel("Restore Checkpoint").click();
   await expect(page.getByTestId("selection-outline")).toHaveAttribute("x", "160");
 });
+
+test("replays history and branches from an earlier step", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/");
+
+  await page.locator('[data-node-name="Hero headline"]').click();
+  await page.getByTestId("svg-canvas").press("ArrowRight");
+  await expect(page.getByTestId("replay-panel")).toContainText("Step 1 / 1");
+  await expect(page.getByTestId("replay-current-step")).toContainText("Move selection");
+
+  await page.getByLabel("Replay step back").click();
+  await page.getByLabel("Branch from replay step").click();
+  await expect(page.locator('[data-node-name="Hero headline"]')).toHaveAttribute("x", "160");
+  await expect(page.getByTestId("replay-panel")).toContainText("Step 0 / 0");
+});

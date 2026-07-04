@@ -39,6 +39,7 @@ import {
 import { CommentsPanel } from "../comments";
 import { connectCollaborationClient, type CollaborationClient, type PresenceState } from "../collab";
 import { createRestoreSnapshotTransaction, createSnapshotTransaction, VersionHistoryPanel } from "../history";
+import { branchHistoryFromReplay, ReplayPanel } from "../replay";
 
 const tools = [
   { label: "Select", icon: MousePointer2, active: true },
@@ -330,6 +331,11 @@ export function WorkspaceLayout() {
     commit(createRestoreSnapshotTransaction(design, snapshotId, beforeSnapshotId, "2026-07-04T10:00:00.000Z", (index) => metadata("snapshot-restore", index)));
   }
 
+  function branchFromReplay(step: number) {
+    setHistory(branchHistoryFromReplay(initialDesign, history.past, step));
+    setSelection(emptySelection);
+  }
+
   return (
     <main
       className="flex h-dvh min-h-[680px] flex-col overflow-hidden bg-desk-canvas text-desk-ink lg:flex-row"
@@ -378,6 +384,7 @@ export function WorkspaceLayout() {
           onResolveComment={setCommentResolved}
           onCreateSnapshot={createNamedSnapshot}
           onRestoreSnapshot={restoreSnapshot}
+          onBranchFromReplay={branchFromReplay}
           onSelectComment={setActiveCommentId}
           remotePresences={remotePresences}
           selection={selection}
@@ -579,6 +586,7 @@ function CanvasShell({
   onResolveComment,
   onCreateSnapshot,
   onRestoreSnapshot,
+  onBranchFromReplay,
   onSelectComment,
   remotePresences,
   selection,
@@ -601,6 +609,7 @@ function CanvasShell({
   onResolveComment: (commentId: CommentId, resolved: boolean) => void;
   onCreateSnapshot: (name: string) => void;
   onRestoreSnapshot: (snapshotId: SnapshotId) => void;
+  onBranchFromReplay: (step: number) => void;
   onSelectComment: (commentId: CommentId) => void;
   remotePresences: readonly PresenceState[];
   selection: SelectionState;
@@ -642,6 +651,7 @@ function CanvasShell({
         onResolve={onResolveComment}
       />
       <VersionHistoryPanel design={history.present} onCreateSnapshot={onCreateSnapshot} onRestoreSnapshot={onRestoreSnapshot} />
+      <ReplayPanel history={history} initialDesign={history.past.length === 0 ? history.present : createStarterDesign()} onBranch={onBranchFromReplay} />
     </div>
   );
 }
