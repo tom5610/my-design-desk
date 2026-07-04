@@ -2,9 +2,9 @@
 
 ## Current State
 
-- Current milestone: 17 - Version History, Snapshots, Named Milestones
-- Previous milestone: 16 - Multiplayer Presence, Cursors, Selections, Live Edits
-- Status: ready for local version history after verified realtime collaboration
+- Current milestone: 18 - Replay Journal, Scrubber, Branch From Here
+- Previous milestone: 17 - Version History, Snapshots, Named Milestones
+- Status: ready for deterministic replay after verified local version history
 - Source spec: `docs/prompt.md`
 - Milestone contract: `docs/plans.md`
 - Runbook: `docs/implement.md`
@@ -506,17 +506,46 @@ Notes:
 - Presence remains ephemeral and is not written into `DesignFile.ops`.
 - Remote committed operations clear redo history but do not create local undo entries.
 
+### 17. Version History, Snapshots, Named Milestones
+
+Status: complete
+
+Scope completed:
+
+- Added snapshot document storage for root IDs, nodes, components, comments, prototype links, and styles.
+- Added `snapshot.create`, `snapshot.restore`, and `snapshot.delete` operations with validation and inversion support.
+- Added deterministic snapshot helpers and restore transactions that create a before-restore snapshot.
+- Added a version history panel with named snapshot creation and restore controls.
+- Wired snapshot create/restore through the same operation/history path as other document changes.
+- Added snapshot determinism and restore unit tests.
+- Added Playwright version history smoke for creating and restoring a snapshot.
+- Preserved existing untracked `METHOD.md`; it remained outside the Milestone 17 commit scope.
+
+Verification:
+
+- `npm run typecheck` passed.
+- `npm run lint` passed.
+- `npm test` passed with local socket permissions: 17 test files, 44 tests.
+- `npm run build` passed with Vite `8.1.3`.
+- `npm run test:e2e` passed with local browser/server permissions: 12 Playwright tests including version history smoke.
+
+Notes:
+
+- Snapshot restore preserves the snapshot timeline and records a before-restore snapshot for recovery.
+- Snapshot documents intentionally exclude transient presence and operation journal state.
+
 ## Next Milestone
 
-### 17. Version History, Snapshots, Named Milestones
+### 18. Replay Journal, Scrubber, Branch From Here
 
 Planned scope:
 
-- Automatic snapshots.
-- Timeline list.
-- Restore.
-- Named version milestones.
-- Canonical diffable snapshot storage.
+- Replay panel with play/pause.
+- Step forward/back.
+- Scrubber.
+- Speed controls.
+- Deterministic reconstruction.
+- Branch from here.
 
 Planned verification:
 
@@ -525,14 +554,14 @@ Planned verification:
 - `npm test`
 - `npm run build`
 - `npm run test:e2e`
-- Snapshot determinism tests.
-- Restore tests.
-- Playwright history smoke.
+- Replay determinism tests.
+- Branch tests.
+- Playwright replay smoke.
 
 Known risks:
 
-- Snapshot restore must work with the existing operation history and not bypass validation.
-- Snapshot storage should stay deterministic and diffable.
+- Replay must reconstruct from canonical operations without depending on current React state.
+- Branching should create a new restorable state without corrupting existing snapshots.
 - Existing untracked `METHOD.md` remains outside milestone scope and will not be staged.
 
 ## Decisions Log
@@ -563,6 +592,7 @@ Known risks:
 | 2026-07-04 | Apply snapping to pointer drag while preserving raw keyboard nudges. | Drag benefits from guides and snap targets, while keyboard nudge should remain precise one-pixel editing. |
 | 2026-07-04 | Store comments as canonical design threads and render pins from that model. | Comments must persist, replay, undo, and export from the same deterministic document state as nodes. |
 | 2026-07-04 | Keep presence ephemeral and sync document edits through committed operations. | Collaboration state should feel live without polluting replay, export, snapshots, or canonical serialization. |
+| 2026-07-04 | Store snapshots as deterministic document slices instead of full recursive design files. | Snapshot restore needs diffable document state without recursively embedding snapshot history or transient ops. |
 
 ## Blockers
 
@@ -570,4 +600,4 @@ None.
 
 ## Handoff
 
-Start Milestone 17 by following `docs/implement.md`. Reread the active milestone, add deterministic snapshots and restore through validated document state, and preserve the untracked `METHOD.md` unless the user explicitly asks to include it.
+Start Milestone 18 by following `docs/implement.md`. Reread the active milestone, reconstruct replay state from canonical operations, and preserve the untracked `METHOD.md` unless the user explicitly asks to include it.

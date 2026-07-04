@@ -1,5 +1,6 @@
 import type { DesignFile, Geometry, NodeId, SceneNode } from "../model";
 import type { NodeStyle } from "../model/styles";
+import { serializeDesign } from "../serialization";
 import type { DesignOperation, NodeReorderOperation, Transaction } from "./types";
 import { applyOperation } from "./apply";
 
@@ -75,6 +76,24 @@ function currentOrder(design: DesignFile, operation: NodeReorderOperation) {
   }
 
   return parent.children;
+}
+
+function serializeRestorableDocument(design: Pick<DesignFile, "comments" | "components" | "nodes" | "prototypeLinks" | "rootIds" | "styles">) {
+  return serializeDesign({
+    schemaVersion: 1,
+    id: "snapshot-compare",
+    name: "Snapshot Compare",
+    createdAt: "1970-01-01T00:00:00.000Z",
+    updatedAt: "1970-01-01T00:00:00.000Z",
+    rootIds: design.rootIds,
+    nodes: design.nodes,
+    components: design.components,
+    comments: design.comments,
+    prototypeLinks: design.prototypeLinks,
+    snapshots: {},
+    styles: design.styles,
+    ops: [],
+  });
 }
 
 export function invertOperation(designBefore: DesignFile, operation: DesignOperation): DesignOperation {
@@ -287,6 +306,49 @@ export function invertOperation(designBefore: DesignFile, operation: DesignOpera
         payload: {
           commentId: thread.id,
           resolved: thread.resolved,
+        },
+      };
+    }
+    case "snapshot.create":
+      return {
+        ...inverseMetadata(operation, designBefore.updatedAt),
+        kind: "snapshot.delete",
+        payload: {
+          snapshotId: operation.payload.snapshot.id,
+        },
+      };
+    case "snapshot.delete": {
+      const snapshot = designBefore.snapshots[operation.payload.snapshotId];
+      if (!snapshot) {
+        throw new Error(`Cannot invert snapshot delete for missing snapshot ${operation.payload.snapshotId}`);
+      }
+      return {
+        ...inverseMetadata(operation, designBefore.updatedAt),
+        kind: "snapshot.create",
+        payload: {
+          snapshot,
+        },
+      };
+    }
+    case "snapshot.restore": {
+      const latestSnapshot = Object.values(designBefore.snapshots).find(
+        (snapshot) => serializeRestorableDocument(snapshot.document) === serializeRestorableDocument({
+          rootIds: designBefore.rootIds,
+          nodes: designBefore.nodes,
+          components: designBefore.components,
+          comments: designBefore.comments,
+          prototypeLinks: designBefore.prototypeLinks,
+          styles: designBefore.styles,
+        }),
+      );
+      if (!latestSnapshot) {
+        throw new Error("Cannot invert snapshot restore without a matching previous snapshot");
+      }
+      return {
+        ...inverseMetadata(operation, designBefore.updatedAt),
+        kind: "snapshot.restore",
+        payload: {
+          snapshotId: latestSnapshot.id,
         },
       };
     }

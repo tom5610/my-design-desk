@@ -20,6 +20,9 @@ import type {
   NodeUpdateConstraintsOperation,
   NodeUpdateMetaOperation,
   NodeUpdateStyleOperation,
+  SnapshotCreateOperation,
+  SnapshotDeleteOperation,
+  SnapshotRestoreOperation,
   Transaction,
 } from "./types";
 
@@ -518,6 +521,59 @@ function setCommentResolved(design: DesignFile, operation: CommentSetResolvedOpe
   return nextDesign;
 }
 
+function createSnapshot(design: DesignFile, operation: SnapshotCreateOperation): DesignFile {
+  const { snapshot } = operation.payload;
+  if (design.snapshots[snapshot.id]) {
+    throw new Error(`Cannot create duplicate snapshot ${snapshot.id}`);
+  }
+
+  const nextDesign = {
+    ...design,
+    updatedAt: operation.timestamp,
+    snapshots: {
+      ...design.snapshots,
+      [snapshot.id]: snapshot,
+    },
+  };
+  assertValidDesign(nextDesign);
+  return nextDesign;
+}
+
+function restoreSnapshot(design: DesignFile, operation: SnapshotRestoreOperation): DesignFile {
+  const snapshot = design.snapshots[operation.payload.snapshotId];
+  if (!snapshot) {
+    throw new Error(`Cannot restore missing snapshot ${operation.payload.snapshotId}`);
+  }
+
+  const nextDesign = {
+    ...design,
+    updatedAt: operation.timestamp,
+    rootIds: snapshot.document.rootIds,
+    nodes: snapshot.document.nodes,
+    components: snapshot.document.components,
+    comments: snapshot.document.comments,
+    prototypeLinks: snapshot.document.prototypeLinks,
+    styles: snapshot.document.styles,
+  };
+  assertValidDesign(nextDesign);
+  return nextDesign;
+}
+
+function deleteSnapshot(design: DesignFile, operation: SnapshotDeleteOperation): DesignFile {
+  if (!design.snapshots[operation.payload.snapshotId]) {
+    return design;
+  }
+  const snapshots = { ...design.snapshots };
+  delete snapshots[operation.payload.snapshotId];
+  const nextDesign = {
+    ...design,
+    updatedAt: operation.timestamp,
+    snapshots,
+  };
+  assertValidDesign(nextDesign);
+  return nextDesign;
+}
+
 export function applyOperation(design: DesignFile, operation: DesignOperation): DesignFile {
   switch (operation.kind) {
     case "node.create":
@@ -554,6 +610,12 @@ export function applyOperation(design: DesignFile, operation: DesignOperation): 
       return removeCommentMessage(design, operation);
     case "comment.setResolved":
       return setCommentResolved(design, operation);
+    case "snapshot.create":
+      return createSnapshot(design, operation);
+    case "snapshot.restore":
+      return restoreSnapshot(design, operation);
+    case "snapshot.delete":
+      return deleteSnapshot(design, operation);
   }
 }
 

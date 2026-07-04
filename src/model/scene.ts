@@ -170,6 +170,14 @@ export type Snapshot = {
   name: string;
   createdAt: string;
   rootIds: readonly NodeId[];
+  document: {
+    rootIds: readonly NodeId[];
+    nodes: Record<NodeId, SceneNode>;
+    components: Record<ComponentId, ComponentDefinition>;
+    comments: Record<CommentId, CommentThread>;
+    prototypeLinks: Record<PrototypeLinkId, PrototypeLink>;
+    styles: StyleTokens;
+  };
 };
 
 export type DesignFile = {

@@ -1,5 +1,5 @@
-import type { CommentId, ComponentId, NodeId } from "../model/ids";
-import type { CommentThread, ComponentDefinition, ComponentRootNode, Constraints, Geometry, SceneNode } from "../model/scene";
+import type { CommentId, ComponentId, NodeId, SnapshotId } from "../model/ids";
+import type { CommentThread, ComponentDefinition, ComponentRootNode, Constraints, Geometry, SceneNode, Snapshot } from "../model/scene";
 import type { NodeStyle } from "../model/styles";
 
 export type OperationMetadata = {
@@ -148,6 +148,27 @@ export type CommentSetResolvedOperation = OperationMetadata & {
   };
 };
 
+export type SnapshotCreateOperation = OperationMetadata & {
+  kind: "snapshot.create";
+  payload: {
+    snapshot: Snapshot;
+  };
+};
+
+export type SnapshotRestoreOperation = OperationMetadata & {
+  kind: "snapshot.restore";
+  payload: {
+    snapshotId: SnapshotId;
+  };
+};
+
+export type SnapshotDeleteOperation = OperationMetadata & {
+  kind: "snapshot.delete";
+  payload: {
+    snapshotId: SnapshotId;
+  };
+};
+
 export type DesignOperation =
   | NodeCreateOperation
   | NodeUpdateGeometryOperation
@@ -165,7 +186,10 @@ export type DesignOperation =
   | CommentDeleteOperation
   | CommentAddMessageOperation
   | CommentRemoveMessageOperation
-  | CommentSetResolvedOperation;
+  | CommentSetResolvedOperation
+  | SnapshotCreateOperation
+  | SnapshotRestoreOperation
+  | SnapshotDeleteOperation;
 
 export type Transaction = {
   id: string;

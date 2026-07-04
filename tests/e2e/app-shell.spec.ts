@@ -170,3 +170,20 @@ test("syncs presence and live edits between two tabs", async ({ browser }) => {
     await context.close();
   }
 });
+
+test("creates and restores a local version snapshot", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/");
+
+  await expect(page.getByTestId("version-history-panel")).toBeVisible();
+  await page.getByLabel("Snapshot name").fill("Checkpoint");
+  await page.getByLabel("Create snapshot").click();
+  await expect(page.getByTestId("version-history-panel")).toContainText("Checkpoint");
+
+  await page.locator('[data-node-name="Hero headline"]').click();
+  await page.getByTestId("svg-canvas").press("ArrowRight");
+  await expect(page.getByTestId("selection-outline")).toHaveAttribute("x", "161");
+
+  await page.getByLabel("Restore Checkpoint").click();
+  await expect(page.getByTestId("selection-outline")).toHaveAttribute("x", "160");
+});

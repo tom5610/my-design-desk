@@ -20,7 +20,7 @@ import { ModalShell } from "../ui/ModalShell";
 import { ToastStack } from "../ui/ToastStack";
 import { SvgCanvas } from "../canvas";
 import { createStarterDesign } from "../demo";
-import { createDeterministicIdFactory, type CommentId, type CommentThread, type ComponentId, type ComponentOverrides, type DesignFile, type NodeId, type Point } from "../model";
+import { createDeterministicIdFactory, type CommentId, type CommentThread, type ComponentId, type ComponentOverrides, type DesignFile, type NodeId, type Point, type SnapshotId } from "../model";
 import { createLayerMetaTransaction, createReorderTransaction, LayersPanel } from "../panels/layers";
 import { AssetsPanel } from "../panels/assets";
 import { InspectorPanel } from "../panels/inspector";
@@ -38,6 +38,7 @@ import {
 } from "../commands";
 import { CommentsPanel } from "../comments";
 import { connectCollaborationClient, type CollaborationClient, type PresenceState } from "../collab";
+import { createRestoreSnapshotTransaction, createSnapshotTransaction, VersionHistoryPanel } from "../history";
 
 const tools = [
   { label: "Select", icon: MousePointer2, active: true },
@@ -71,6 +72,7 @@ export function WorkspaceLayout() {
   const opCounter = useRef(0);
   const commentIds = useRef(createDeterministicIdFactory("workspace-comments"));
   const componentIds = useRef(createDeterministicIdFactory("workspace-components"));
+  const snapshotIds = useRef(createDeterministicIdFactory("workspace-snapshots"));
   const collaborationClient = useRef<CollaborationClient | null>(null);
   const broadcastChannel = useRef<BroadcastChannel | null>(null);
   const cursorPosition = useRef<Point | undefined>(undefined);
@@ -318,6 +320,16 @@ export function WorkspaceLayout() {
     setCommentFocusKey((current) => current + 1);
   }
 
+  function createNamedSnapshot(name: string) {
+    const snapshotId = snapshotIds.current.snapshot(name);
+    commit(createSnapshotTransaction(design, snapshotId, name, "2026-07-04T10:00:00.000Z", metadata("snapshot-create")));
+  }
+
+  function restoreSnapshot(snapshotId: SnapshotId) {
+    const beforeSnapshotId = snapshotIds.current.snapshot("before-restore");
+    commit(createRestoreSnapshotTransaction(design, snapshotId, beforeSnapshotId, "2026-07-04T10:00:00.000Z", (index) => metadata("snapshot-restore", index)));
+  }
+
   return (
     <main
       className="flex h-dvh min-h-[680px] flex-col overflow-hidden bg-desk-canvas text-desk-ink lg:flex-row"
@@ -364,6 +376,8 @@ export function WorkspaceLayout() {
           onJumpToComment={jumpToComment}
           onReplyToComment={replyToComment}
           onResolveComment={setCommentResolved}
+          onCreateSnapshot={createNamedSnapshot}
+          onRestoreSnapshot={restoreSnapshot}
           onSelectComment={setActiveCommentId}
           remotePresences={remotePresences}
           selection={selection}
@@ -563,6 +577,8 @@ function CanvasShell({
   onJumpToComment,
   onReplyToComment,
   onResolveComment,
+  onCreateSnapshot,
+  onRestoreSnapshot,
   onSelectComment,
   remotePresences,
   selection,
@@ -583,6 +599,8 @@ function CanvasShell({
   onJumpToComment: (commentId: CommentId) => void;
   onReplyToComment: (commentId: CommentId, body: string) => void;
   onResolveComment: (commentId: CommentId, resolved: boolean) => void;
+  onCreateSnapshot: (name: string) => void;
+  onRestoreSnapshot: (snapshotId: SnapshotId) => void;
   onSelectComment: (commentId: CommentId) => void;
   remotePresences: readonly PresenceState[];
   selection: SelectionState;
@@ -623,6 +641,7 @@ function CanvasShell({
         onReply={onReplyToComment}
         onResolve={onResolveComment}
       />
+      <VersionHistoryPanel design={history.present} onCreateSnapshot={onCreateSnapshot} onRestoreSnapshot={onRestoreSnapshot} />
     </div>
   );
 }
