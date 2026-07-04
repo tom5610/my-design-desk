@@ -27,3 +27,18 @@ test("keeps the shell usable on mobile width", async ({ page }) => {
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
   expect(overflow).toBe(false);
 });
+
+test("selects and nudges a canvas node", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/");
+
+  const canvas = page.getByTestId("svg-canvas");
+  await page.locator('[data-node-name="Hero headline"]').click();
+  await expect(page.getByTestId("selection-outline")).toBeVisible();
+
+  const before = await page.getByTestId("selection-outline").getAttribute("x");
+  await canvas.press("ArrowRight");
+  const after = await page.getByTestId("selection-outline").getAttribute("x");
+
+  expect(Number(after)).toBe(Number(before) + 1);
+});

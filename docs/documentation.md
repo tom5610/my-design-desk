@@ -2,9 +2,9 @@
 
 ## Current State
 
-- Current milestone: 8 - Selection, Handles, Transforms, And Keyboard Basics
-- Previous milestone: 7 - SVG Renderer, Pan, Zoom, And Hit Testing
-- Status: ready for selection and transform controls after verified SVG renderer
+- Current milestone: 9 - Node Creation And Editing
+- Previous milestone: 8 - Selection, Handles, Transforms, And Keyboard Basics
+- Status: ready for node creation tools after verified selection and transforms
 - Source spec: `docs/prompt.md`
 - Milestone contract: `docs/plans.md`
 - Runbook: `docs/implement.md`
@@ -226,16 +226,47 @@ Notes:
 - Hit-testing is currently axis-aligned for rotated geometry; rotation-sensitive transforms start in later milestones.
 - Image nodes render as local SVG placeholders until tracked visual assets are introduced.
 
+### 8. Selection, Handles, Transforms, And Keyboard Basics
+
+Status: complete
+
+Scope completed:
+
+- Added deterministic selection state helpers for select-one, toggle multi-select, and clear selection.
+- Added move transaction command that emits `node.updateGeometry` operations.
+- Added SVG selection overlay with outline, resize handles, and rotation handle.
+- Wired canvas clicks to selection and shift-click multi-selection.
+- Added keyboard basics for arrow-key nudging, delete/backspace, undo/redo, duplicate, and copy/paste placeholder behavior.
+- Routed nudge/delete/duplicate changes through operations and history rather than direct model mutation.
+- Added selection tests and transform command tests.
+- Added Playwright interaction smoke for selecting and nudging a rendered node.
+- Preserved existing untracked `METHOD.md`; it remained outside the Milestone 8 commit scope.
+
+Verification:
+
+- `npm run lint` passed.
+- `npm run typecheck` initially failed because DOM attributes return strings while selection expects branded `NodeId`. Cast selected DOM node IDs at the canvas boundary.
+- `npm run typecheck` passed after the fix.
+- `npm test` passed: 8 test files, 21 tests.
+- `npm run build` passed with Vite `8.1.3`.
+- `npm run test:e2e` passed: 3 Playwright tests including selection and nudge smoke.
+- `npm run lint` passed after the selection boundary fix.
+- `npm run typecheck` passed after the selection boundary fix.
+
+Notes:
+
+- Resize and rotation handles are visual foundations in this milestone; full pointer resize/rotate behavior can be deepened in later transform work.
+- Copy/paste currently duplicates the active selection locally; richer clipboard serialization can build on the same command path.
+
 ## Next Milestone
 
-### 8. Selection, Handles, Transforms, And Keyboard Basics
+### 9. Node Creation And Editing
 
 Planned scope:
 
-- Implement deterministic selection state.
-- Add selection outlines, resize handles, and rotation handle overlays.
-- Add drag, nudge, delete, copy/paste, duplicate, undo/redo keyboard basics.
-- Ensure transforms emit operations.
+- Add tools for Frame, Group, Rectangle, Ellipse, Line, Text, Image URL, Button, Icon SVG, and Chart placeholder.
+- Ensure every required node kind can be created, selected, edited at a basic level, serialized, and replayed.
+- Keep creation operations deterministic.
 
 Planned verification:
 
@@ -243,14 +274,14 @@ Planned verification:
 - `npm run typecheck`
 - `npm test`
 - `npm run build`
-- Selection tests.
-- Transform tests.
-- Playwright interaction smoke.
+- Creation op tests.
+- Renderer snapshots.
+- Playwright creation smoke.
 
 Known risks:
 
-- Selection and transform state must not bypass the operations engine.
-- Keyboard shortcuts can conflict with browser defaults if not scoped carefully.
+- Tool UI can expand too far; keep Milestone 9 focused on basic creation and edit surfaces.
+- New node defaults must remain deterministic and serializable.
 - Existing untracked `METHOD.md` remains outside milestone scope and will not be staged.
 
 ## Decisions Log
@@ -272,6 +303,7 @@ Known risks:
 | 2026-07-04 | Keep presence ephemeral and persist only canonical sequenced operations. | Presence should not pollute replay, export, or version history state. |
 | 2026-07-04 | Keep shell UI behavior shallow in Milestone 6. | Interaction-heavy canvas behavior starts in the SVG renderer and selection milestones. |
 | 2026-07-04 | Keep Milestone 7 hit-testing axis-aligned. | Rotation-aware transform math belongs with the transform milestone rather than the first renderer slice. |
+| 2026-07-04 | Route keyboard transforms through operations and history. | Selection UI must not become a parallel state mutation path. |
 
 ## Blockers
 
@@ -279,4 +311,4 @@ None.
 
 ## Handoff
 
-Start Milestone 8 by following `docs/implement.md`. Reread the active milestone, keep selection and transform changes operation-driven, and preserve the untracked `METHOD.md` unless the user explicitly asks to include it.
+Start Milestone 9 by following `docs/implement.md`. Reread the active milestone, add deterministic creation tools for required node kinds, and preserve the untracked `METHOD.md` unless the user explicitly asks to include it.
