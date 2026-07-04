@@ -1,12 +1,11 @@
 import { Minus, Plus, RotateCcw } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
 
-import { createStarterDesign } from "../demo";
 import { defaultViewport, screenToDocument, zoomAtPoint, type Viewport } from "../geometry";
 import type { NodeId } from "../model";
 import { SvgScene } from "../render";
-import { clearSelection, emptySelection, selectOne, toggleSelection, type SelectionState } from "../selection";
-import { commitTransaction, createHistoryState, redo, undo, type HistoryState } from "../store";
+import { clearSelection, selectOne, toggleSelection, type SelectionState } from "../selection";
+import { commitTransaction, redo, undo, type HistoryState } from "../store";
 import { createTransaction, type DesignOperation, type OperationMetadata } from "../ops";
 import { createMoveTransaction } from "../commands";
 import { SelectionOverlay } from "./overlays";
@@ -17,10 +16,17 @@ const canvasSize = {
   height: 960,
 };
 
-export function SvgCanvas() {
-  const initialDesign = useMemo(() => createStarterDesign(), []);
-  const [history, setHistory] = useState<HistoryState>(() => createHistoryState(initialDesign));
-  const [selection, setSelection] = useState<SelectionState>(emptySelection);
+export function SvgCanvas({
+  history,
+  selection,
+  setHistory,
+  setSelection,
+}: {
+  history: HistoryState;
+  selection: SelectionState;
+  setHistory: React.Dispatch<React.SetStateAction<HistoryState>>;
+  setSelection: React.Dispatch<React.SetStateAction<SelectionState>>;
+}) {
   const [activeTool, setActiveTool] = useState<CreationTool | "Select">("Select");
   const [viewport, setViewport] = useState<Viewport>(defaultViewport);
   const clipboardNodeId = useRef<string | null>(null);

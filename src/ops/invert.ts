@@ -113,6 +113,22 @@ export function invertOperation(designBefore: DesignFile, operation: DesignOpera
         },
       };
     }
+    case "node.updateMeta": {
+      const node = designBefore.nodes[operation.payload.nodeId];
+      if (!node) {
+        throw new Error(`Cannot invert metadata update for missing node ${operation.payload.nodeId}`);
+      }
+      return {
+        ...inverseMetadata(operation, designBefore.updatedAt),
+        kind: "node.updateMeta",
+        payload: {
+          nodeId: node.id,
+          name: node.name,
+          locked: node.locked,
+          visible: node.visible,
+        },
+      };
+    }
     case "node.reparent": {
       const node = designBefore.nodes[operation.payload.nodeId];
       if (!node) {

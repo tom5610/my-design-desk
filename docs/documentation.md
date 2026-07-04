@@ -2,9 +2,9 @@
 
 ## Current State
 
-- Current milestone: 10 - Layers Tree, Assets, Search, And Reorder
-- Previous milestone: 9 - Node Creation And Editing
-- Status: ready for layers and assets panels after verified node creation tools
+- Current milestone: 11 - Properties Inspector And Constraints
+- Previous milestone: 10 - Layers Tree, Assets, Search, And Reorder
+- Status: ready for properties inspector after verified layers and assets panels
 - Source spec: `docs/prompt.md`
 - Milestone contract: `docs/plans.md`
 - Runbook: `docs/implement.md`
@@ -286,15 +286,45 @@ Notes:
 - Created image nodes render as local SVG placeholders until tracked asset handling is added.
 - Component creation remains reserved for the component-system milestone.
 
+### 10. Layers Tree, Assets, Search, And Reorder
+
+Status: complete
+
+Scope completed:
+
+- Lifted scene history and selection state to the workspace so the canvas and left panel share the same model.
+- Added a model-backed layers panel with nesting depth, search, jump-to-layer selection, visibility toggle, lock toggle, drag/drop hook, and move-up reorder control.
+- Added layer tree flattening and reorder helpers.
+- Added assets tab shell for color styles, text styles, and components.
+- Added `node.updateMeta` operations for name, lock, and visibility updates, with inversion support.
+- Ensured visibility toggles affect SVG rendering and hit-testing through the shared scene model.
+- Added layers unit tests for flattening, filtering, metadata updates, and reorder ops.
+- Added Playwright layers smoke for filtering and toggling node visibility.
+- Preserved existing untracked `METHOD.md`; it remained outside the Milestone 10 commit scope.
+
+Verification:
+
+- `npm run lint` initially failed on inferred sibling array typing in the reorder helper. Added explicit typed sibling resolution.
+- `npm run lint` passed after the fix.
+- `npm run typecheck` passed.
+- `npm test` passed: 10 test files, 27 tests.
+- `npm run build` passed with Vite `8.1.3`.
+- `npm run test:e2e` passed: 5 Playwright tests including layers filter/visibility smoke.
+
+Notes:
+
+- Layer rename operation support exists in `node.updateMeta`; editable rename UI can be deepened with the inspector/command work.
+- Drag/drop currently routes through the same reorder helper as the move-up control.
+
 ## Next Milestone
 
-### 10. Layers Tree, Assets, Search, And Reorder
+### 11. Properties Inspector And Constraints
 
 Planned scope:
 
-- Build left panel layers tree with nesting, search, jump to layer, visibility, lock, rename, and reorder.
-- Add assets tab shell for colors, text styles, and components.
-- Ensure layers reflect scene order and lock/visibility affect hit-testing and rendering.
+- Add inspector controls for geometry, rotation, fill, gradient, stroke, radius, opacity, shadows, text style, and frame constraints.
+- Ensure inspector edits selected nodes through operations.
+- Add deterministic frame constraint helpers.
 
 Planned verification:
 
@@ -302,13 +332,14 @@ Planned verification:
 - `npm run typecheck`
 - `npm test`
 - `npm run build`
-- Layers tests.
-- Playwright layers smoke.
+- Inspector unit tests.
+- Constraints tests.
+- Playwright inspector smoke.
 
 Known risks:
 
-- Layer panel can drift into full inspector behavior; keep this milestone focused on hierarchy, assets shell, and reordering.
-- Visibility/lock must share the scene model rather than become panel-only UI state.
+- Inspector updates can become direct state mutation if not routed through operations.
+- Constraint math must remain deterministic and independent from React.
 - Existing untracked `METHOD.md` remains outside milestone scope and will not be staged.
 
 ## Decisions Log
@@ -332,6 +363,7 @@ Known risks:
 | 2026-07-04 | Keep Milestone 7 hit-testing axis-aligned. | Rotation-aware transform math belongs with the transform milestone rather than the first renderer slice. |
 | 2026-07-04 | Route keyboard transforms through operations and history. | Selection UI must not become a parallel state mutation path. |
 | 2026-07-04 | Add creation tools as deterministic `node.create` operations. | Creation, selection, replay, and serialization should all share the same operation path. |
+| 2026-07-04 | Lift workspace scene state above canvas and panels. | Layers, canvas rendering, selection, and future inspector controls must operate on one shared scene model. |
 
 ## Blockers
 
@@ -339,4 +371,4 @@ None.
 
 ## Handoff
 
-Start Milestone 10 by following `docs/implement.md`. Reread the active milestone, connect layers and assets panels to the scene model, and preserve the untracked `METHOD.md` unless the user explicitly asks to include it.
+Start Milestone 11 by following `docs/implement.md`. Reread the active milestone, route inspector edits through operations, and preserve the untracked `METHOD.md` unless the user explicitly asks to include it.

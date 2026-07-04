@@ -9,6 +9,7 @@ import type {
   NodeReparentOperation,
   NodeRestoreOperation,
   NodeUpdateGeometryOperation,
+  NodeUpdateMetaOperation,
   NodeUpdateStyleOperation,
   Transaction,
 } from "./types";
@@ -130,6 +131,24 @@ function updateStyle(design: DesignFile, operation: NodeUpdateStyleOperation): D
     {
       ...node,
       style: operation.payload.style,
+    },
+    operation.timestamp,
+  );
+}
+
+function updateMeta(design: DesignFile, operation: NodeUpdateMetaOperation): DesignFile {
+  const node = design.nodes[operation.payload.nodeId];
+  if (!node) {
+    throw new Error(`Cannot update metadata for missing node ${operation.payload.nodeId}`);
+  }
+
+  return replaceNode(
+    design,
+    {
+      ...node,
+      name: operation.payload.name ?? node.name,
+      locked: operation.payload.locked ?? node.locked,
+      visible: operation.payload.visible ?? node.visible,
     },
     operation.timestamp,
   );
@@ -278,6 +297,8 @@ export function applyOperation(design: DesignFile, operation: DesignOperation): 
       return updateGeometry(design, operation);
     case "node.updateStyle":
       return updateStyle(design, operation);
+    case "node.updateMeta":
+      return updateMeta(design, operation);
     case "node.reparent":
       return reparentNode(design, operation);
     case "node.reorder":

@@ -35,6 +35,16 @@ export type NodeUpdateStyleOperation = OperationMetadata & {
   };
 };
 
+export type NodeUpdateMetaOperation = OperationMetadata & {
+  kind: "node.updateMeta";
+  payload: {
+    nodeId: NodeId;
+    name?: string;
+    locked?: boolean;
+    visible?: boolean;
+  };
+};
+
 export type NodeReparentOperation = OperationMetadata & {
   kind: "node.reparent";
   payload: {
@@ -72,6 +82,7 @@ export type DesignOperation =
   | NodeCreateOperation
   | NodeUpdateGeometryOperation
   | NodeUpdateStyleOperation
+  | NodeUpdateMetaOperation
   | NodeReparentOperation
   | NodeReorderOperation
   | NodeDeleteOperation
