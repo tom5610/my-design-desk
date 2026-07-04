@@ -10,6 +10,9 @@ import type { DesignFile } from "../src/model";
 import type { DesignOperation, OperationMetadata } from "../src/ops";
 import { LocalSessionStore } from "../server/sessions";
 import { createDesignDeskServer } from "../server/index";
+import { createStarterDesign } from "../src/demo";
+import { applyOperation } from "../src/ops";
+import { serializeDesign } from "../src/serialization";
 
 const tempDirs: string[] = [];
 
@@ -109,12 +112,12 @@ describe("Design Desk WebSocket server", () => {
     const dataDir = await makeTempDir();
     const server = createDesignDeskServer({ dataDir });
 
-    const port = 18_787 + (process.pid % 1_000);
-
     await new Promise<void>((resolve, reject) => {
       server.httpServer.once("error", reject);
-      server.httpServer.listen(port, "127.0.0.1", resolve);
+      server.httpServer.listen(0, "127.0.0.1", resolve);
     });
+    const address = server.httpServer.address();
+    const port = typeof address === "object" && address ? address.port : 0;
 
     let socket: WebSocket | undefined;
 
@@ -154,5 +157,16 @@ describe("Design Desk WebSocket server", () => {
       socket?.close();
       await server.close();
     }
+  });
+
+  it("applies server-sequenced operations deterministically across clients", () => {
+    const initialA = createStarterDesign();
+    const initialB = createStarterDesign();
+    const operation = {
+      ...moveHeadline(initialA, "op_two_client_move"),
+      sequence: 1,
+    };
+
+    expect(serializeDesign(applyOperation(initialA, operation))).toBe(serializeDesign(applyOperation(initialB, operation)));
   });
 });

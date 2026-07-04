@@ -13,7 +13,7 @@ import {
   Type,
   Users,
 } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { DemoProjectPicker } from "../ui/DemoProjectPicker";
 import { ModalShell } from "../ui/ModalShell";
@@ -26,7 +26,7 @@ import { AssetsPanel } from "../panels/assets";
 import { InspectorPanel } from "../panels/inspector";
 import { selectOne, type SelectionState, emptySelection } from "../selection";
 import { commitTransaction, createHistoryState, type HistoryState } from "../store";
-import { createTransaction, type OperationMetadata } from "../ops";
+import { applyOperation, createTransaction, type DesignOperation, type OperationMetadata } from "../ops";
 import {
   createCommentReplyTransaction,
   createCommentResolvedTransaction,
@@ -37,6 +37,7 @@ import {
   createUpdateInstanceOverridesTransaction,
 } from "../commands";
 import { CommentsPanel } from "../comments";
+import { connectCollaborationClient, type CollaborationClient, type PresenceState } from "../collab";
 
 const tools = [
   { label: "Select", icon: MousePointer2, active: true },
@@ -47,18 +48,123 @@ const tools = [
 
 export function WorkspaceLayout() {
   const initialDesign = useMemo(() => createStarterDesign(), []);
+  const sessionId = useMemo(() => new URLSearchParams(window.location.search).get("sessionId") ?? "local-demo", []);
+  const actor = useMemo(
+    () => ({
+      id: `actor-${Math.random().toString(36).slice(2, 8)}`,
+      name: `Local ${Math.random().toString(36).slice(2, 5).toUpperCase()}`,
+      color: "#db2777",
+    }),
+    [],
+  );
+  const clientId = useMemo(() => `client-${Math.random().toString(36).slice(2, 10)}`, []);
   const [history, setHistory] = useState<HistoryState>(() => createHistoryState(initialDesign));
   const [activeCommentId, setActiveCommentId] = useState<CommentId | null>(null);
   const [commentAuthor, setCommentAuthor] = useState("Local reviewer");
   const [commentFocusKey, setCommentFocusKey] = useState(0);
   const [commentMode, setCommentMode] = useState(false);
+  const [collabStatus, setCollabStatus] = useState<"connecting" | "connected" | "offline">("connecting");
+  const [lastSequence, setLastSequence] = useState(0);
+  const [presenceByClient, setPresenceByClient] = useState<Record<string, PresenceState>>({});
   const [selection, setSelection] = useState<SelectionState>(emptySelection);
   const [leftTab, setLeftTab] = useState<"layers" | "assets">("layers");
   const opCounter = useRef(0);
   const commentIds = useRef(createDeterministicIdFactory("workspace-comments"));
   const componentIds = useRef(createDeterministicIdFactory("workspace-components"));
+  const collaborationClient = useRef<CollaborationClient | null>(null);
+  const broadcastChannel = useRef<BroadcastChannel | null>(null);
+  const cursorPosition = useRef<Point | undefined>(undefined);
+  const localBroadcastSequence = useRef(0);
+  const pendingOperationIds = useRef(new Set<string>());
   const design = history.present;
   const comments = Object.values(design.comments).sort((left, right) => left.id.localeCompare(right.id));
+  const remotePresences = Object.values(presenceByClient).filter((presence) => presence.clientId !== clientId);
+
+  useEffect(() => {
+    const channel = new BroadcastChannel(`design-desk:${sessionId}`);
+    broadcastChannel.current = channel;
+    setCollabStatus("connected");
+
+    channel.onmessage = (event: MessageEvent<{ type: "operation"; operation: DesignOperation & { sequence: number } } | { type: "presence"; presence: PresenceState }>) => {
+      const message = event.data;
+      if (message.type === "presence") {
+        setPresenceByClient((current) => ({ ...current, [message.presence.clientId]: message.presence }));
+        return;
+      }
+
+      if (pendingOperationIds.current.has(message.operation.opId)) {
+        return;
+      }
+      setLastSequence((current) => Math.max(current, message.operation.sequence));
+      setHistory((current) => ({
+        ...current,
+        present: applyOperation(current.present, message.operation),
+        future: [],
+      }));
+    };
+
+    return () => {
+      broadcastChannel.current = null;
+      channel.close();
+    };
+  }, [sessionId]);
+
+  useEffect(() => {
+    const client = connectCollaborationClient(
+      `ws://127.0.0.1:8787/collaboration?sessionId=${encodeURIComponent(sessionId)}`,
+      (message) => {
+        if (message.type === "server.ready") {
+          setLastSequence(message.nextSequence - 1);
+        } else if (message.type === "presence.joined" || message.type === "presence.updated") {
+          setPresenceByClient((current) => ({ ...current, [message.presence.clientId]: message.presence }));
+        } else if (message.type === "presence.left") {
+          setPresenceByClient((current) => {
+            const next = { ...current };
+            delete next[message.clientId];
+            return next;
+          });
+        } else if (message.type === "operation.committed") {
+          setLastSequence(message.operation.sequence);
+          if (pendingOperationIds.current.delete(message.operation.opId)) {
+            return;
+          }
+          setHistory((current) => ({
+            ...current,
+            present: applyOperation(current.present, message.operation),
+            future: [],
+          }));
+        }
+      },
+      {
+        onClose: () => setCollabStatus(broadcastChannel.current ? "connected" : "offline"),
+        onError: () => setCollabStatus(broadcastChannel.current ? "connected" : "offline"),
+        onOpen: () => {
+          setCollabStatus("connected");
+          client.send({
+            type: "presence.hello",
+            sessionId,
+            clientId,
+            actor,
+          });
+        },
+      },
+    );
+    collaborationClient.current = client;
+
+    return () => {
+      collaborationClient.current = null;
+      client.close();
+    };
+  }, [actor, clientId, sessionId]);
+
+  useEffect(() => {
+    sendPresenceUpdate();
+  }, [selection.selectedIds]);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => sendPresenceUpdate(), 500);
+    return () => window.clearInterval(interval);
+  }, [selection.selectedIds]);
 
   function metadata(kind: string, index = 0): OperationMetadata {
     opCounter.current += 1;
@@ -75,7 +181,50 @@ export function WorkspaceLayout() {
   function commit(transaction: Parameters<typeof commitTransaction>[1]) {
     if (transaction.operations.length > 0) {
       setHistory((current) => commitTransaction(current, transaction));
+      broadcastOperations(transaction.operations);
     }
+  }
+
+  function broadcastOperations(operations: readonly DesignOperation[]) {
+    for (const operation of operations) {
+      pendingOperationIds.current.add(operation.opId);
+      collaborationClient.current?.send({
+        type: "operation.submit",
+        sessionId,
+        clientId,
+        operation,
+      });
+      localBroadcastSequence.current += 1;
+      broadcastChannel.current?.postMessage({
+        type: "operation",
+        operation: {
+          ...operation,
+          sequence: localBroadcastSequence.current,
+        },
+      });
+    }
+  }
+
+  function sendPresenceUpdate(cursor = cursorPosition.current) {
+    const presence: PresenceState = {
+      clientId,
+      actor,
+      cursor,
+      selectedIds: selection.selectedIds,
+    };
+    broadcastChannel.current?.postMessage({ type: "presence", presence });
+    collaborationClient.current?.send({
+      type: "presence.update",
+      sessionId,
+      clientId,
+      cursor,
+      selectedIds: selection.selectedIds,
+    });
+  }
+
+  function updateCursor(point: Point) {
+    cursorPosition.current = point;
+    sendPresenceUpdate(point);
   }
 
   function createComponentFromSelection() {
@@ -195,18 +344,28 @@ export function WorkspaceLayout() {
       />
 
       <section className="flex min-h-0 min-w-0 flex-1 flex-col">
-        <TopToolbar commentMode={commentMode} onToggleCommentMode={() => setCommentMode((current) => !current)} />
+        <TopToolbar
+          actorName={actor.name}
+          collabStatus={collabStatus}
+          commentMode={commentMode}
+          onlineCount={remotePresences.length + (collabStatus === "connected" ? 1 : 0)}
+          onToggleCommentMode={() => setCommentMode((current) => !current)}
+        />
         <CanvasShell
           activeCommentId={activeCommentId}
           commentFocusKey={commentFocusKey}
           commentMode={commentMode}
           comments={comments}
           history={history}
+          lastSequence={lastSequence}
+          onBroadcastOperations={broadcastOperations}
           onCreateComment={createComment}
+          onCursorMove={updateCursor}
           onJumpToComment={jumpToComment}
           onReplyToComment={replyToComment}
           onResolveComment={setCommentResolved}
           onSelectComment={setActiveCommentId}
+          remotePresences={remotePresences}
           selection={selection}
           setCommentAuthor={setCommentAuthor}
           setHistory={setHistory}
@@ -314,7 +473,19 @@ function LeftPanel({
   );
 }
 
-function TopToolbar({ commentMode, onToggleCommentMode }: { commentMode: boolean; onToggleCommentMode: () => void }) {
+function TopToolbar({
+  actorName,
+  collabStatus,
+  commentMode,
+  onlineCount,
+  onToggleCommentMode,
+}: {
+  actorName: string;
+  collabStatus: "connecting" | "connected" | "offline";
+  commentMode: boolean;
+  onlineCount: number;
+  onToggleCommentMode: () => void;
+}) {
   return (
     <header
       className="flex h-auto shrink-0 flex-col gap-2 border-b border-desk-line bg-white p-3 sm:h-14 sm:flex-row sm:items-center sm:justify-between sm:px-4 sm:py-0"
@@ -351,9 +522,10 @@ function TopToolbar({ commentMode, onToggleCommentMode }: { commentMode: boolean
       </div>
 
       <div className="flex items-center gap-2 overflow-x-auto">
-        <button className="flex shrink-0 items-center gap-2 rounded border border-desk-line px-3 py-2 text-xs font-medium">
+        <button className="flex shrink-0 items-center gap-2 rounded border border-desk-line px-3 py-2 text-xs font-medium" data-testid="presence-list">
           <Users size={15} aria-hidden="true" />
-          Local session
+          {collabStatus === "connected" ? `${onlineCount} online` : "Offline"}
+          <span className="text-desk-muted">{actorName}</span>
         </button>
         <button className="flex shrink-0 items-center gap-2 rounded border border-desk-line px-3 py-2 text-xs font-medium">
           <Eye size={15} aria-hidden="true" />
@@ -384,11 +556,15 @@ function CanvasShell({
   commentMode,
   comments,
   history,
+  lastSequence,
+  onBroadcastOperations,
   onCreateComment,
+  onCursorMove,
   onJumpToComment,
   onReplyToComment,
   onResolveComment,
   onSelectComment,
+  remotePresences,
   selection,
   setCommentAuthor,
   setHistory,
@@ -400,11 +576,15 @@ function CanvasShell({
   commentMode: boolean;
   comments: readonly CommentThread[];
   history: HistoryState;
+  lastSequence: number;
+  onBroadcastOperations: (operations: readonly DesignOperation[]) => void;
   onCreateComment: (point: Point, nodeId: NodeId) => void;
+  onCursorMove: (point: Point) => void;
   onJumpToComment: (commentId: CommentId) => void;
   onReplyToComment: (commentId: CommentId, body: string) => void;
   onResolveComment: (commentId: CommentId, resolved: boolean) => void;
   onSelectComment: (commentId: CommentId) => void;
+  remotePresences: readonly PresenceState[];
   selection: SelectionState;
   setCommentAuthor: (author: string) => void;
   setHistory: React.Dispatch<React.SetStateAction<HistoryState>>;
@@ -417,7 +597,7 @@ function CanvasShell({
     >
       <div className="absolute left-4 top-4 flex items-center gap-2 rounded border border-desk-line bg-white/95 px-3 py-2 text-xs font-medium shadow-panel sm:left-6 sm:top-5">
         <span className="size-2 rounded-full bg-emerald-500" />
-        100% · Draft saved locally
+        100% · Seq {lastSequence}
       </div>
       <SvgCanvas
         activeCommentId={activeCommentId}
@@ -425,8 +605,11 @@ function CanvasShell({
         commentMode={commentMode}
         comments={comments}
         history={history}
+        onBroadcastOperations={onBroadcastOperations}
         onCreateComment={onCreateComment}
+        onCursorMove={onCursorMove}
         onSelectComment={onSelectComment}
+        remotePresences={remotePresences}
         selection={selection}
         setHistory={setHistory}
         setSelection={setSelection}

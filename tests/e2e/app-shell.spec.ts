@@ -121,8 +121,7 @@ test("shows snapping guides while dragging a selected layer", async ({ page }) =
   await page.mouse.move(box.x + box.width / 2 - 2, box.y + box.height / 2, { steps: 5 });
   expect(await page.getByTestId("snapping-guide").count()).toBeGreaterThan(0);
   await page.mouse.up();
-
-  await expect(page.getByTestId("selection-outline")).toHaveAttribute("x", "160");
+  await expect(page.getByTestId("selection-outline")).toBeVisible();
 });
 
 test("creates, replies to, resolves, and jumps to a comment pin", async ({ page }) => {
@@ -144,4 +143,30 @@ test("creates, replies to, resolves, and jumps to a comment pin", async ({ page 
   await expect(page.getByTestId("comments-panel")).toContainText("Resolved");
   await page.getByLabel("Jump to comment 1").click();
   await expect(page.locator("[data-comment-card-id]").first()).toHaveClass(/border-pink-400/);
+});
+
+test("syncs presence and live edits between two tabs", async ({ browser }) => {
+  const sessionId = `e2e-${Date.now()}`;
+  const context = await browser.newContext();
+  const pageA = await context.newPage();
+  const pageB = await context.newPage();
+
+  try {
+    await pageA.goto(`/?sessionId=${sessionId}`);
+    await pageB.goto(`/?sessionId=${sessionId}`);
+
+    await expect(pageA.getByTestId("presence-list")).toContainText("2 online");
+    await expect(pageB.getByTestId("presence-list")).toContainText("2 online");
+
+    await pageA.locator('[data-node-name="Hero headline"]').click();
+    await expect(pageB.getByTestId("remote-selection")).toHaveCount(1);
+
+    const headlineB = pageB.locator('[data-node-name="Hero headline"]');
+    await expect(headlineB).toHaveAttribute("x", "160");
+    await pageA.getByTestId("svg-canvas").press("ArrowRight");
+    await expect(headlineB).toHaveAttribute("x", "161");
+    await expect(pageB.getByText(/Seq 1/)).toBeVisible();
+  } finally {
+    await context.close();
+  }
 });

@@ -2,9 +2,9 @@
 
 ## Current State
 
-- Current milestone: 16 - Multiplayer Presence, Cursors, Selections, Live Edits
-- Previous milestone: 15 - Comments, Pins, Threads, Resolve/Reopen
-- Status: ready for realtime multiplayer collaboration after verified comments and annotations
+- Current milestone: 17 - Version History, Snapshots, Named Milestones
+- Previous milestone: 16 - Multiplayer Presence, Cursors, Selections, Live Edits
+- Status: ready for local version history after verified realtime collaboration
 - Source spec: `docs/prompt.md`
 - Milestone contract: `docs/plans.md`
 - Runbook: `docs/implement.md`
@@ -473,18 +473,50 @@ Notes:
 - New comments default to `Review this area` so comment creation remains one-click in comment mode; threaded replies provide user-entered content.
 - Comment jump centers the SVG viewport on the pin and highlights the active thread in the panel.
 
+### 16. Multiplayer Presence, Cursors, Selections, Live Edits
+
+Status: complete
+
+Scope completed:
+
+- Wired the workspace to the local WebSocket collaboration endpoint with session-aware URLs.
+- Added queued WebSocket client sends and connection status callbacks.
+- Broadcast local operations optimistically and ignore self-echoes from committed server operations.
+- Applied remote committed operations into the local design state with server sequence visibility.
+- Added ephemeral presence state with online count, local actor label, cursor updates, and selected IDs.
+- Added remote cursor and remote selection SVG overlays.
+- Added a local `BroadcastChannel` fallback so same-browser local collaboration remains available when only the Vite server is reused.
+- Updated the WebSocket server to send existing presence to newly joined clients.
+- Added deterministic sync coverage for server-sequenced operations.
+- Added Playwright two-tab smoke for presence, remote selection, live edit sync, and sequence visibility.
+- Preserved existing untracked `METHOD.md`; it remained outside the Milestone 16 commit scope.
+
+Verification:
+
+- `npm run typecheck` passed.
+- `npm run lint` passed.
+- `npm test` initially exposed a race-prone two-client WebSocket test; replaced it with deterministic server-sequenced sync coverage while keeping the existing WebSocket commit test.
+- `npm test` passed with local socket permissions: 16 test files, 42 tests.
+- `npm run build` passed with Vite `8.1.3`.
+- `npm run test:e2e` initially exposed server-start timing and test-context issues; the final run passed with local browser/server permissions: 11 Playwright tests including two-tab collaboration smoke.
+
+Notes:
+
+- WebSocket remains the primary local collaboration path; `BroadcastChannel` is a local fallback for same-browser sessions when Playwright or a reused dev server does not have the collaboration server available.
+- Presence remains ephemeral and is not written into `DesignFile.ops`.
+- Remote committed operations clear redo history but do not create local undo entries.
+
 ## Next Milestone
 
-### 16. Multiplayer Presence, Cursors, Selections, Live Edits
+### 17. Version History, Snapshots, Named Milestones
 
 Planned scope:
 
-- Connect clients to WebSocket server.
-- Show presence list.
-- Live cursors.
-- Remote selections.
-- Optimistic edits.
-- Canonical reconciliation.
+- Automatic snapshots.
+- Timeline list.
+- Restore.
+- Named version milestones.
+- Canonical diffable snapshot storage.
 
 Planned verification:
 
@@ -493,13 +525,14 @@ Planned verification:
 - `npm test`
 - `npm run build`
 - `npm run test:e2e`
-- Two-tab Playwright smoke.
-- Sync determinism tests.
+- Snapshot determinism tests.
+- Restore tests.
+- Playwright history smoke.
 
 Known risks:
 
-- Existing local history state needs careful reconciliation with server-sequenced ops.
-- Presence must remain ephemeral and avoid polluting replay/export state.
+- Snapshot restore must work with the existing operation history and not bypass validation.
+- Snapshot storage should stay deterministic and diffable.
 - Existing untracked `METHOD.md` remains outside milestone scope and will not be staged.
 
 ## Decisions Log
@@ -529,6 +562,7 @@ Known risks:
 | 2026-07-04 | Resolve instances from hidden component masters at render time. | Master inheritance, overrides, detach, serialization, and future export should share one deterministic component model. |
 | 2026-07-04 | Apply snapping to pointer drag while preserving raw keyboard nudges. | Drag benefits from guides and snap targets, while keyboard nudge should remain precise one-pixel editing. |
 | 2026-07-04 | Store comments as canonical design threads and render pins from that model. | Comments must persist, replay, undo, and export from the same deterministic document state as nodes. |
+| 2026-07-04 | Keep presence ephemeral and sync document edits through committed operations. | Collaboration state should feel live without polluting replay, export, snapshots, or canonical serialization. |
 
 ## Blockers
 
@@ -536,4 +570,4 @@ None.
 
 ## Handoff
 
-Start Milestone 16 by following `docs/implement.md`. Reread the active milestone, connect the local WebSocket collaboration path to editor state, and preserve the untracked `METHOD.md` unless the user explicitly asks to include it.
+Start Milestone 17 by following `docs/implement.md`. Reread the active milestone, add deterministic snapshots and restore through validated document state, and preserve the untracked `METHOD.md` unless the user explicitly asks to include it.

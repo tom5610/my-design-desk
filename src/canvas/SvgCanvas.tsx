@@ -8,11 +8,12 @@ import { clearSelection, selectOne, toggleSelection, type SelectionState } from 
 import { commitTransaction, redo, undo, type HistoryState } from "../store";
 import { createTransaction, type DesignOperation, type OperationMetadata } from "../ops";
 import { createGroupTransaction, createLockTransaction, createMoveTransaction, createOrderingTransaction } from "../commands";
-import { GuideOverlay, SelectionOverlay } from "./overlays";
+import { GuideOverlay, PresenceOverlay, SelectionOverlay } from "./overlays";
 import { createNodeOperation, createToolIdFactory, creationTools, type CreationTool } from "../tools";
 import { CanvasContextMenu, type ContextMenuAction } from "../ui/contextMenu";
 import { ShortcutHelp } from "../ui/shortcuts";
 import { CommentPinsOverlay } from "../comments";
+import type { PresenceState } from "../collab";
 
 const canvasSize = {
   width: 1440,
@@ -33,8 +34,11 @@ export function SvgCanvas({
   commentMode,
   comments,
   history,
+  onBroadcastOperations,
   onCreateComment,
+  onCursorMove,
   onSelectComment,
+  remotePresences,
   selection,
   setHistory,
   setSelection,
@@ -44,8 +48,11 @@ export function SvgCanvas({
   commentMode: boolean;
   comments: readonly CommentThread[];
   history: HistoryState;
+  onBroadcastOperations: (operations: readonly DesignOperation[]) => void;
   onCreateComment: (point: Point, nodeId: NodeId) => void;
+  onCursorMove: (point: Point) => void;
   onSelectComment: (commentId: CommentId) => void;
+  remotePresences: readonly PresenceState[];
   selection: SelectionState;
   setHistory: React.Dispatch<React.SetStateAction<HistoryState>>;
   setSelection: React.Dispatch<React.SetStateAction<SelectionState>>;
@@ -100,6 +107,7 @@ export function SvgCanvas({
   function commit(transaction: ReturnType<typeof createTransaction>) {
     if (transaction.operations.length > 0) {
       setHistory((current) => commitTransaction(current, transaction));
+      onBroadcastOperations(transaction.operations);
     }
   }
 
@@ -158,6 +166,7 @@ export function SvgCanvas({
   }
 
   function handlePointerMove(event: React.PointerEvent<SVGSVGElement>) {
+    onCursorMove(documentPointFromEvent(event));
     const drag = dragState.current;
     if (!drag) {
       return;
@@ -335,6 +344,7 @@ export function SvgCanvas({
         <SvgScene design={design} />
         <GuideOverlay guides={activeGuides} />
         <CommentPinsOverlay activeCommentId={activeCommentId} comments={comments} onSelectComment={onSelectComment} />
+        <PresenceOverlay design={design} presences={remotePresences} />
         <SelectionOverlay design={design} selectedIds={selection.selectedIds} />
       </svg>
 

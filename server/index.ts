@@ -166,6 +166,9 @@ async function handleClientMessage(store: LocalSessionStore, socket: WebSocket, 
 
   if (message.type === "presence.hello") {
     state.clientId = message.clientId;
+    for (const existingPresence of sessionPresence(message.sessionId).values()) {
+      send(socket, { type: "presence.updated", sessionId: message.sessionId, presence: existingPresence });
+    }
     const presence: PresenceState = {
       clientId: message.clientId,
       actor: message.actor,
