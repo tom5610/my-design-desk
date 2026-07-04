@@ -2,9 +2,9 @@
 
 ## Current State
 
-- Current milestone: 5 - Local Server, Session Store, And WebSocket Protocol
-- Previous milestone: 4 - Deterministic Ops Engine And Undo/Redo
-- Status: ready for local server persistence and protocol after verified ops engine
+- Current milestone: 6 - App Shell And Professional Workspace UI
+- Previous milestone: 5 - Local Server, Session Store, And WebSocket Protocol
+- Status: ready for workspace shell after verified local server and protocol
 - Source spec: `docs/prompt.md`
 - Milestone contract: `docs/plans.md`
 - Runbook: `docs/implement.md`
@@ -125,16 +125,50 @@ Notes:
 - Ops and history logic are independent from React.
 - Undo currently relies on inverse transactions stored in memory; persistent history and server sequencing start in Milestone 5.
 
+### 5. Local Server, Session Store, And WebSocket Protocol
+
+Status: complete
+
+Scope completed:
+
+- Added shared collaboration message types for presence, operation submission, server readiness, operation commits, and operation rejection.
+- Added a minimal browser collaboration client wrapper.
+- Added a local JSON session store under gitignored `data/sessions`.
+- Added atomic session writes and persisted canonical operation ordering.
+- Added server-side operation sequencing with duplicate op ID rejection.
+- Refactored the local server entry point to export a reusable testable server and keep `npm run dev` behavior.
+- Added WebSocket handling for `server.ready`, ephemeral presence, and committed operation broadcasts.
+- Added server unit tests and a real WebSocket smoke test.
+- Added a dedicated TypeScript test project so Node/server tests and browser app code can share types without weakening either project.
+- Preserved existing untracked `METHOD.md`; it remained outside the Milestone 5 commit scope.
+
+Verification:
+
+- `npm run lint` initially failed on an unnecessary sequence type assertion, an unused type import, and unsafe WebSocket test message stringification. Fixed all three.
+- `npm run lint` passed.
+- `npm run typecheck` initially failed because tests were in the browser TS project while importing server files. Added `tsconfig.test.json`, moved tests out of `tsconfig.app.json`, and added the test project to `tsconfig.json` and ESLint.
+- `npm run typecheck` passed after the TS project split.
+- `npm test` in the sandbox timed out because the WebSocket smoke test requires localhost binding. Reran with approved elevated `npm test`; it passed: 4 test files, 12 tests.
+- `npm run lint` passed after the WebSocket smoke fixes.
+- `npm run typecheck` passed after the WebSocket smoke fixes.
+- `npm run build` passed with Vite `8.1.3`.
+- `npm run dev` started Vite at `http://127.0.0.1:5173/` and the collaboration server at `http://127.0.0.1:8787`, then was stopped with `Ctrl-C`.
+
+Notes:
+
+- Presence is intentionally ephemeral and is not written to the session store.
+- Runtime session files are under gitignored `data/`.
+- WebSocket tests may require elevated localhost permissions in this environment.
+
 ## Next Milestone
 
-### 5. Local Server, Session Store, And WebSocket Protocol
+### 6. App Shell And Professional Workspace UI
 
 Planned scope:
 
-- Implement a local server session store.
-- Assign canonical sequence numbers to operations.
-- Expose a shared WebSocket protocol for operations and presence.
-- Keep presence ephemeral and persisted ops canonical.
+- Build top bar, left panel, canvas center, right inspector, bottom/status areas, toasts, modal foundations, and demo project picker shell.
+- Move the current one-file shell toward `src/app/*`, `src/ui/*`, and `src/layout/*`.
+- Keep the UI professional, dense, responsive, and stable at desktop and mobile widths.
 
 Planned verification:
 
@@ -142,13 +176,12 @@ Planned verification:
 - `npm run typecheck`
 - `npm test`
 - `npm run build`
-- Server unit tests.
-- WebSocket smoke test.
+- Playwright load smoke.
 
 Known risks:
 
-- Runtime session data must stay local and gitignored under `data/`.
-- Server protocol types must stay shared with the client to avoid divergence.
+- Layout work can drift into later editor behavior; Milestone 6 should stay focused on shell structure and stable controls.
+- Responsive shell checks may require browser automation and screenshots.
 - Existing untracked `METHOD.md` remains outside milestone scope and will not be staged.
 
 ## Decisions Log
@@ -167,6 +200,7 @@ Known risks:
 | 2026-07-04 | Use Vite 8, Vitest 4, and Node >=20.19 for the scaffold. | Current Vite tooling resolves the esbuild audit finding and is compatible with the local Node runtime. |
 | 2026-07-04 | Normalize canonical serialized numbers to 4 decimal places. | It keeps snapshot bytes stable while retaining sufficient precision for early geometry and style data. |
 | 2026-07-04 | Store undo as inverse transactions computed before applying the original transaction. | This makes compound user actions undo as one step while preserving deterministic operation replay. |
+| 2026-07-04 | Keep presence ephemeral and persist only canonical sequenced operations. | Presence should not pollute replay, export, or version history state. |
 
 ## Blockers
 
@@ -174,4 +208,4 @@ None.
 
 ## Handoff
 
-Start Milestone 5 by following `docs/implement.md`. Reread the active milestone, implement local server persistence and shared protocol types, and preserve the untracked `METHOD.md` unless the user explicitly asks to include it.
+Start Milestone 6 by following `docs/implement.md`. Reread the active milestone, keep UI work scoped to the workspace shell, and preserve the untracked `METHOD.md` unless the user explicitly asks to include it.

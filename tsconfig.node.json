@@ -10,8 +10,8 @@
     "allowSyntheticDefaultImports": true,
     "strict": true,
     "forceConsistentCasingInFileNames": true,
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
@@ -23,6 +23,11 @@
     "postcss.config.js",
     "scripts",
     "server",
+    "src/collab/messages.ts",
+    "src/demo",
+    "src/model",
+    "src/ops",
+    "src/serialization",
     "tailwind.config.ts",
     "vite.config.ts"
   ]
