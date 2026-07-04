@@ -1,14 +1,14 @@
-import { Minus, Plus, RotateCcw } from "lucide-react";
+import { AlignCenter, Grid3X3, Minus, Plus, RotateCcw, Ruler } from "lucide-react";
 import { useRef, useState } from "react";
 
-import { defaultViewport, screenToDocument, zoomAtPoint, type Viewport } from "../geometry";
+import { defaultSnapSettings, defaultViewport, screenToDocument, snapMove, zoomAtPoint, type SnapGuide, type SnapSettings, type Viewport } from "../geometry";
 import type { NodeId } from "../model";
 import { SvgScene } from "../render";
 import { clearSelection, selectOne, toggleSelection, type SelectionState } from "../selection";
 import { commitTransaction, redo, undo, type HistoryState } from "../store";
 import { createTransaction, type DesignOperation, type OperationMetadata } from "../ops";
 import { createGroupTransaction, createLockTransaction, createMoveTransaction, createOrderingTransaction } from "../commands";
-import { SelectionOverlay } from "./overlays";
+import { GuideOverlay, SelectionOverlay } from "./overlays";
 import { createNodeOperation, createToolIdFactory, creationTools, type CreationTool } from "../tools";
 import { CanvasContextMenu, type ContextMenuAction } from "../ui/contextMenu";
 import { ShortcutHelp } from "../ui/shortcuts";
@@ -16,6 +16,14 @@ import { ShortcutHelp } from "../ui/shortcuts";
 const canvasSize = {
   width: 1440,
   height: 960,
+};
+
+type DragState = {
+  start: { x: number; y: number };
+  selectedIds: readonly NodeId[];
+  design: HistoryState["present"];
+  lastDelta: { dx: number; dy: number };
+  moved: boolean;
 };
 
 export function SvgCanvas({
@@ -30,10 +38,13 @@ export function SvgCanvas({
   setSelection: React.Dispatch<React.SetStateAction<SelectionState>>;
 }) {
   const [activeTool, setActiveTool] = useState<CreationTool | "Select">("Select");
+  const [activeGuides, setActiveGuides] = useState<readonly SnapGuide[]>([]);
   const [contextMenuPosition, setContextMenuPosition] = useState<{ x: number; y: number } | null>(null);
+  const [snapSettings, setSnapSettings] = useState<SnapSettings>(defaultSnapSettings);
   const [shortcutHelpOpen, setShortcutHelpOpen] = useState(false);
   const [viewport, setViewport] = useState<Viewport>(defaultViewport);
   const clipboardNodeId = useRef<string | null>(null);
+  const dragState = useRef<DragState | null>(null);
   const opCounter = useRef(0);
   const toolIds = useRef(createToolIdFactory("local-canvas"));
   const design = history.present;
@@ -79,6 +90,7 @@ export function SvgCanvas({
   }
 
   function handlePointerDown(event: React.PointerEvent<SVGSVGElement>) {
+    setActiveGuides([]);
     if (activeTool !== "Select") {
       const parentId = design.rootIds[0] ?? null;
       const operation = createNodeOperation(activeTool, documentPointFromEvent(event), parentId, toolIds.current, metadata("create"));
@@ -94,11 +106,64 @@ export function SvgCanvas({
       return;
     }
 
-    setSelection((current) => (event.shiftKey ? toggleSelection(current, nodeId as NodeId) : selectOne(nodeId as NodeId)));
+    const nextSelection = event.shiftKey ? toggleSelection(selection, nodeId as NodeId) : selectOne(nodeId as NodeId);
+    setSelection(nextSelection);
+    dragState.current = {
+      start: documentPointFromEvent(event),
+      selectedIds: nextSelection.selectedIds,
+      design,
+      lastDelta: { dx: 0, dy: 0 },
+      moved: false,
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }
+
+  function handlePointerMove(event: React.PointerEvent<SVGSVGElement>) {
+    const drag = dragState.current;
+    if (!drag) {
+      return;
+    }
+
+    const point = documentPointFromEvent(event);
+    const rawDelta = {
+      dx: point.x - drag.start.x,
+      dy: point.y - drag.start.y,
+    };
+
+    if (!drag.moved && Math.abs(rawDelta.dx) + Math.abs(rawDelta.dy) < 2) {
+      return;
+    }
+
+    const snapped = snapMove(drag.design, drag.selectedIds, rawDelta, snapSettings);
+    dragState.current = {
+      ...drag,
+      lastDelta: snapped.delta,
+      moved: true,
+    };
+    setActiveGuides(snapped.guides);
+  }
+
+  function handlePointerUp(event: React.PointerEvent<SVGSVGElement>) {
+    const drag = dragState.current;
+    if (!drag) {
+      return;
+    }
+
+    if (drag.moved) {
+      commit(createMoveTransaction(drag.design, drag.selectedIds, drag.lastDelta, (index) => metadata("drag", index)));
+    }
+    dragState.current = null;
+    setActiveGuides([]);
+    event.currentTarget.releasePointerCapture(event.pointerId);
   }
 
   function nudge(dx: number, dy: number) {
+    setActiveGuides([]);
     commit(createMoveTransaction(design, selection.selectedIds, { dx, dy }, (index) => metadata("nudge", index)));
+  }
+
+  function toggleSnapSetting(key: keyof Pick<SnapSettings, "grid" | "alignment" | "spacing">) {
+    setSnapSettings((current) => ({ ...current, [key]: !current[key] }));
   }
 
   function deleteSelection() {
@@ -222,10 +287,14 @@ export function SvgCanvas({
         preserveAspectRatio="xMidYMid meet"
         role="img"
         onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
         onContextMenu={handleContextMenu}
         viewBox={`${viewport.x} ${viewport.y} ${viewBoxWidth} ${viewBoxHeight}`}
       >
         <SvgScene design={design} />
+        <GuideOverlay guides={activeGuides} />
         <SelectionOverlay design={design} selectedIds={selection.selectedIds} />
       </svg>
 
@@ -260,8 +329,47 @@ export function SvgCanvas({
           <RotateCcw size={15} aria-hidden="true" />
         </button>
       </div>
+      <SnapControls settings={snapSettings} onToggle={toggleSnapSetting} />
       <CanvasContextMenu onAction={runContextAction} onClose={() => setContextMenuPosition(null)} position={contextMenuPosition} />
       <ShortcutHelp onClose={() => setShortcutHelpOpen(false)} open={shortcutHelpOpen} />
+    </div>
+  );
+}
+
+function SnapControls({
+  onToggle,
+  settings,
+}: {
+  onToggle: (key: keyof Pick<SnapSettings, "grid" | "alignment" | "spacing">) => void;
+  settings: SnapSettings;
+}) {
+  const controls = [
+    { key: "grid", label: "Grid", icon: Grid3X3 },
+    { key: "alignment", label: "Align", icon: AlignCenter },
+    { key: "spacing", label: "Space", icon: Ruler },
+  ] as const;
+
+  return (
+    <div className="absolute bottom-4 left-4 flex items-center gap-1 rounded border border-desk-line bg-white/95 p-1 shadow-panel" data-testid="snap-controls">
+      {controls.map((control) => {
+        const Icon = control.icon;
+        return (
+          <button
+            aria-label={`${control.label} snapping`}
+            aria-pressed={settings[control.key]}
+            className={`flex h-8 min-w-16 items-center justify-center gap-1 rounded px-2 text-xs font-semibold ${
+              settings[control.key] ? "bg-desk-ink text-white" : "text-slate-600 hover:bg-slate-100"
+            }`}
+            key={control.key}
+            onClick={() => onToggle(control.key)}
+            title={`${control.label} snapping`}
+            type="button"
+          >
+            <Icon size={13} aria-hidden="true" />
+            {control.label}
+          </button>
+        );
+      })}
     </div>
   );
 }

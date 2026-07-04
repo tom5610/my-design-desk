@@ -2,9 +2,9 @@
 
 ## Current State
 
-- Current milestone: 14 - Snapping, Alignment, And Spacing Guides
-- Previous milestone: 13 - Components, Instances, Overrides, Detach
-- Status: ready for snapping and guide work after verified component system
+- Current milestone: 15 - Comments, Pins, Threads, Resolve/Reopen
+- Previous milestone: 14 - Snapping, Alignment, And Spacing Guides
+- Status: ready for comments and annotations after verified snapping and guide work
 - Source spec: `docs/prompt.md`
 - Milestone contract: `docs/plans.md`
 - Runbook: `docs/implement.md`
@@ -377,8 +377,6 @@ Notes:
 - Ungroup UI is not yet exposed; grouping command infrastructure is in place and can be extended with ungroup in later command polish.
 - Shortcut help reflects the keyboard shortcuts currently implemented in the shell.
 
-## Next Milestone
-
 ### 13. Components, Instances, Overrides, Detach
 
 Status: complete
@@ -414,13 +412,49 @@ Notes:
 
 ### 14. Snapping, Alignment, And Spacing Guides
 
+Status: complete
+
+Scope completed:
+
+- Added deterministic snapping helpers for grid, alignment, and spacing calculations.
+- Added unit-tested bounds math for selected nodes and peer geometry.
+- Added SVG guide overlay rendering for grid, alignment, and spacing guides.
+- Added canvas snap toggles for grid, alignment, and spacing.
+- Added pointer drag movement for selected nodes, committing snapped movement through the existing operation/history path.
+- Preserved keyboard nudge behavior as one-pixel movement without snapping.
+- Added Playwright drag guide smoke that verifies guide rendering and alignment snapping.
+- Preserved existing untracked `METHOD.md`; it remained outside the Milestone 14 commit scope.
+
+Verification:
+
+- `npm run typecheck` passed.
+- `npm run lint` initially failed on an unnecessary object-value assertion in snapping peer collection.
+- `npm test` initially failed because grid snapping was tested with alignment snapping still enabled.
+- `npm run test:e2e` initially failed because keyboard nudge was snapped and because Playwright treated the SVG guide group/line as hidden for visibility assertions.
+- `npm run lint` passed after removing the unnecessary assertion.
+- `npm run typecheck` passed after the drag and guide changes.
+- `npm test` passed: 15 test files, 39 tests.
+- `npm run build` passed with Vite `8.1.3`.
+- `npm run test:e2e` passed: 9 Playwright tests including drag guide smoke.
+
+Notes:
+
+- Snap behavior is currently applied to pointer drag movement; keyboard nudges stay unsnapped for precise one-pixel adjustment.
+- Resize handles remain visual foundations; guide math is ready for resize snapping when handle transforms are deepened.
+- Playwright asserts guide elements are present during drag and verifies the final snapped geometry because SVG guide line visibility is not reliable in Playwright's visibility heuristic.
+
+## Next Milestone
+
+### 15. Comments, Pins, Threads, Resolve/Reopen
+
 Planned scope:
 
-- Snap-to-grid.
-- Alignment guides.
-- Spacing distribution guides.
-- Toggle controls.
-- Visual guide overlays.
+- Comment mode.
+- Canvas pins.
+- Threaded replies.
+- Local author name.
+- Resolve/reopen.
+- Comments panel with jump-to-pin.
 
 Planned verification:
 
@@ -429,13 +463,13 @@ Planned verification:
 - `npm test`
 - `npm run build`
 - `npm run test:e2e`
-- Snapping tests.
-- Playwright drag guide smoke.
+- Comment op tests.
+- Playwright comments smoke.
 
 Known risks:
 
-- Drag and resize behavior is still shallow, so guide smoke may need to exercise keyboard or command-driven movement if pointer dragging is not yet implemented.
-- Guide overlays must not interfere with SVG hit-testing or selection.
+- Comments must persist in the canonical design model without interfering with node operations.
+- Comment pins need deterministic viewport navigation without a router or hosted service.
 - Existing untracked `METHOD.md` remains outside milestone scope and will not be staged.
 
 ## Decisions Log
@@ -463,6 +497,7 @@ Known risks:
 | 2026-07-04 | Route inspector edits through existing operation families. | Inspector UI should be another command surface over the deterministic scene model. |
 | 2026-07-04 | Keep context menu actions on command helpers. | Context UI must not mutate scene state outside the operation path. |
 | 2026-07-04 | Resolve instances from hidden component masters at render time. | Master inheritance, overrides, detach, serialization, and future export should share one deterministic component model. |
+| 2026-07-04 | Apply snapping to pointer drag while preserving raw keyboard nudges. | Drag benefits from guides and snap targets, while keyboard nudge should remain precise one-pixel editing. |
 
 ## Blockers
 
@@ -470,4 +505,4 @@ None.
 
 ## Handoff
 
-Start Milestone 14 by following `docs/implement.md`. Reread the active milestone, add snapping and guide math over the existing geometry/selection paths, and preserve the untracked `METHOD.md` unless the user explicitly asks to include it.
+Start Milestone 15 by following `docs/implement.md`. Reread the active milestone, add comments through deterministic model and operation paths, and preserve the untracked `METHOD.md` unless the user explicitly asks to include it.

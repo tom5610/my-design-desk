@@ -103,3 +103,24 @@ test("edits and detaches component instances", async ({ page }) => {
   await expect(page.locator('[data-node-kind="ComponentInstance"][data-node-name="Secondary CTA instance"]')).toHaveCount(0);
   await expect(page.getByText("Open replay")).toBeVisible();
 });
+
+test("shows snapping guides while dragging a selected layer", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/");
+
+  await expect(page.getByTestId("snap-controls")).toBeVisible();
+  await page.getByRole("button", { name: "Grid snapping" }).click();
+  const body = page.locator('[data-node-name="Hero supporting copy"]');
+  const box = await body.boundingBox();
+  if (!box) {
+    throw new Error("Missing body copy bounds");
+  }
+
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width / 2 - 2, box.y + box.height / 2, { steps: 5 });
+  expect(await page.getByTestId("snapping-guide").count()).toBeGreaterThan(0);
+  await page.mouse.up();
+
+  await expect(page.getByTestId("selection-outline")).toHaveAttribute("x", "160");
+});
