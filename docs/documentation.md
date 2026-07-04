@@ -2,9 +2,9 @@
 
 ## Current State
 
-- Current milestone: 4 - Deterministic Ops Engine And Undo/Redo
-- Previous milestone: 3 - Core Scene Types And Canonical Serialization
-- Status: ready for deterministic ops engine after verified scene model
+- Current milestone: 5 - Local Server, Session Store, And WebSocket Protocol
+- Previous milestone: 4 - Deterministic Ops Engine And Undo/Redo
+- Status: ready for local server persistence and protocol after verified ops engine
 - Source spec: `docs/prompt.md`
 - Milestone contract: `docs/plans.md`
 - Runbook: `docs/implement.md`
@@ -95,15 +95,46 @@ Notes:
 - Scene, validation, serialization, and seed modules are independent from React.
 - Canonical serialization currently normalizes numbers to 4 decimal places; this can be tightened later if transform precision demands it.
 
+### 4. Deterministic Ops Engine And Undo/Redo
+
+Status: complete
+
+Scope completed:
+
+- Added typed operation metadata and operation unions for create, update geometry, update style, reparent, reorder, delete, and internal restore.
+- Added immutable operation apply logic with validation after each scene mutation.
+- Added operation inversion and transaction inversion.
+- Added transaction creation helpers.
+- Added React-independent history state with commit, undo, and redo.
+- Added tests proving deterministic replay bytes, geometry undo/redo, and compound transaction undo behavior.
+- Preserved existing untracked `METHOD.md`; it remained outside the Milestone 4 commit scope.
+
+Verification:
+
+- `npm run lint` initially failed on branded node ID inference in operation apply code and a broad test helper return type. Added explicit `Record<NodeId, SceneNode>` and narrowed the helper to `NodeCreateOperation`.
+- `npm run lint` passed after the fix.
+- `npm run typecheck` passed.
+- `npm test` initially failed because undo restored scene state but kept the operation timestamp in `updatedAt`. Changed inverse operations to carry the pre-operation timestamp.
+- `npm test` passed: 3 test files, 10 tests.
+- `npm run lint` passed after the undo timestamp fix.
+- `npm run typecheck` passed after the undo timestamp fix.
+- `npm run build` passed with Vite `8.1.3`.
+
+Notes:
+
+- Ops and history logic are independent from React.
+- Undo currently relies on inverse transactions stored in memory; persistent history and server sequencing start in Milestone 5.
+
 ## Next Milestone
 
-### 4. Deterministic Ops Engine And Undo/Redo
+### 5. Local Server, Session Store, And WebSocket Protocol
 
 Planned scope:
 
-- Implement typed operations, apply/invert logic, transactions, undo/redo stack, and deterministic replay apply without UI.
-- Keep ops and store logic independent from React.
-- Use canonical serialization tests to prove same initial design plus same ops yields the same design bytes.
+- Implement a local server session store.
+- Assign canonical sequence numbers to operations.
+- Expose a shared WebSocket protocol for operations and presence.
+- Keep presence ephemeral and persisted ops canonical.
 
 Planned verification:
 
@@ -111,13 +142,13 @@ Planned verification:
 - `npm run typecheck`
 - `npm test`
 - `npm run build`
-- Ops determinism tests.
-- Undo/redo tests.
+- Server unit tests.
+- WebSocket smoke test.
 
 Known risks:
 
-- Operation inverses must preserve enough previous state for reliable undo.
-- Compound transactions should undo as one user action without hiding individual operation determinism.
+- Runtime session data must stay local and gitignored under `data/`.
+- Server protocol types must stay shared with the client to avoid divergence.
 - Existing untracked `METHOD.md` remains outside milestone scope and will not be staged.
 
 ## Decisions Log
@@ -135,6 +166,7 @@ Known risks:
 | 2026-07-04 | Store sessions in a local server JSON store. | It supports local persistence, export CLI, and multiplayer recovery. |
 | 2026-07-04 | Use Vite 8, Vitest 4, and Node >=20.19 for the scaffold. | Current Vite tooling resolves the esbuild audit finding and is compatible with the local Node runtime. |
 | 2026-07-04 | Normalize canonical serialized numbers to 4 decimal places. | It keeps snapshot bytes stable while retaining sufficient precision for early geometry and style data. |
+| 2026-07-04 | Store undo as inverse transactions computed before applying the original transaction. | This makes compound user actions undo as one step while preserving deterministic operation replay. |
 
 ## Blockers
 
@@ -142,4 +174,4 @@ None.
 
 ## Handoff
 
-Start Milestone 4 by following `docs/implement.md`. Reread the active milestone, implement ops and undo/redo outside React, and preserve the untracked `METHOD.md` unless the user explicitly asks to include it.
+Start Milestone 5 by following `docs/implement.md`. Reread the active milestone, implement local server persistence and shared protocol types, and preserve the untracked `METHOD.md` unless the user explicitly asks to include it.
