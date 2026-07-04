@@ -2,9 +2,9 @@
 
 ## Current State
 
-- Current milestone: 3 - Core Scene Types And Canonical Serialization
-- Previous milestone: 2 - Repo Scaffold And Tooling
-- Status: ready for deterministic scene model after verified scaffold
+- Current milestone: 4 - Deterministic Ops Engine And Undo/Redo
+- Previous milestone: 3 - Core Scene Types And Canonical Serialization
+- Status: ready for deterministic ops engine after verified scene model
 - Source spec: `docs/prompt.md`
 - Milestone contract: `docs/plans.md`
 - Runbook: `docs/implement.md`
@@ -66,15 +66,44 @@ Notes:
 - Full Playwright browser smoke coverage begins when browser-visible flows are introduced in later milestones; this milestone configures Playwright only.
 - The `export` script is a CLI scaffold. Deterministic export implementation is Milestone 20.
 
+### 3. Core Scene Types And Canonical Serialization
+
+Status: complete
+
+Scope completed:
+
+- Added branded ID types and a seeded deterministic ID factory.
+- Added typed style tokens, fills, strokes, shadows, text styles, node styles, and empty/default style helpers.
+- Added scene graph types for all required node kinds: Frame, Group, Rectangle, Ellipse, Line, Text, Image, Button, Icon, ChartPlaceholder, ComponentRoot, and ComponentInstance.
+- Added validation for roots, parent/child consistency, component roots, and component definitions.
+- Added canonical serialization with stable object-key ordering, undefined omission, finite-number enforcement, and deterministic numeric normalization.
+- Added a deterministic AI Builder Suite starter design seed.
+- Added tests for ID determinism, required node kind coverage, starter seed validation, and canonical serialization stability.
+- Preserved existing untracked `METHOD.md`; it remained outside the Milestone 3 commit scope.
+
+Verification:
+
+- `npm run lint` passed.
+- `npm run typecheck` initially failed because validation imported `NodeId` from the wrong module and used a broad container type guard. Fixed the import and narrowed the guard to scene union container nodes.
+- `npm run typecheck` passed after the fix.
+- `npm test` passed: 2 test files, 7 tests.
+- `npm run build` passed with Vite `8.1.3`.
+- `npm run lint` was rerun after the validation fix and passed.
+
+Notes:
+
+- Scene, validation, serialization, and seed modules are independent from React.
+- Canonical serialization currently normalizes numbers to 4 decimal places; this can be tightened later if transform precision demands it.
+
 ## Next Milestone
 
-### 3. Core Scene Types And Canonical Serialization
+### 4. Deterministic Ops Engine And Undo/Redo
 
 Planned scope:
 
-- Implement scene graph types, style tokens, deterministic ID factory, canonical JSON serialization, and starter demo seed shape.
-- Keep the scene model independent from React.
-- Type all required node kinds from `docs/prompt.md`.
+- Implement typed operations, apply/invert logic, transactions, undo/redo stack, and deterministic replay apply without UI.
+- Keep ops and store logic independent from React.
+- Use canonical serialization tests to prove same initial design plus same ops yields the same design bytes.
 
 Planned verification:
 
@@ -82,13 +111,14 @@ Planned verification:
 - `npm run typecheck`
 - `npm test`
 - `npm run build`
-- Serialization determinism tests.
-- ID determinism tests.
+- Ops determinism tests.
+- Undo/redo tests.
 
 Known risks:
 
-- Scene model shortcuts would create rework for ops, replay, export, and multiplayer.
-- Demo seed data must stay deterministic and local.
+- Operation inverses must preserve enough previous state for reliable undo.
+- Compound transactions should undo as one user action without hiding individual operation determinism.
+- Existing untracked `METHOD.md` remains outside milestone scope and will not be staged.
 
 ## Decisions Log
 
@@ -104,6 +134,7 @@ Known risks:
 | 2026-07-04 | Use server-sequenced local WebSocket sync. | Canonical op order prevents divergent two-tab state. |
 | 2026-07-04 | Store sessions in a local server JSON store. | It supports local persistence, export CLI, and multiplayer recovery. |
 | 2026-07-04 | Use Vite 8, Vitest 4, and Node >=20.19 for the scaffold. | Current Vite tooling resolves the esbuild audit finding and is compatible with the local Node runtime. |
+| 2026-07-04 | Normalize canonical serialized numbers to 4 decimal places. | It keeps snapshot bytes stable while retaining sufficient precision for early geometry and style data. |
 
 ## Blockers
 
@@ -111,4 +142,4 @@ None.
 
 ## Handoff
 
-Start Milestone 3 by following `docs/implement.md`. Reread the active milestone, keep scene and serialization logic independent from React, and preserve the untracked `METHOD.md` unless the user explicitly asks to include it.
+Start Milestone 4 by following `docs/implement.md`. Reread the active milestone, implement ops and undo/redo outside React, and preserve the untracked `METHOD.md` unless the user explicitly asks to include it.
