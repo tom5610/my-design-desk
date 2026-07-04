@@ -40,6 +40,8 @@ import { CommentsPanel } from "../comments";
 import { connectCollaborationClient, type CollaborationClient, type PresenceState } from "../collab";
 import { createRestoreSnapshotTransaction, createSnapshotTransaction, VersionHistoryPanel } from "../history";
 import { branchHistoryFromReplay, ReplayPanel } from "../replay";
+import { createPrototypeLinkTransaction, findContainingFrameId, navigatePrototype, PrototypePanel } from "../prototype";
+import { PreviewOverlay } from "../preview";
 
 const tools = [
   { label: "Select", icon: MousePointer2, active: true },
@@ -68,12 +70,15 @@ export function WorkspaceLayout() {
   const [collabStatus, setCollabStatus] = useState<"connecting" | "connected" | "offline">("connecting");
   const [lastSequence, setLastSequence] = useState(0);
   const [presenceByClient, setPresenceByClient] = useState<Record<string, PresenceState>>({});
+  const [previewBackStack, setPreviewBackStack] = useState<NodeId[]>([]);
+  const [previewNodeId, setPreviewNodeId] = useState<NodeId | null>(null);
   const [selection, setSelection] = useState<SelectionState>(emptySelection);
   const [leftTab, setLeftTab] = useState<"layers" | "assets">("layers");
   const opCounter = useRef(0);
   const commentIds = useRef(createDeterministicIdFactory("workspace-comments"));
   const componentIds = useRef(createDeterministicIdFactory("workspace-components"));
   const snapshotIds = useRef(createDeterministicIdFactory("workspace-snapshots"));
+  const prototypeIds = useRef(createDeterministicIdFactory("workspace-prototype"));
   const collaborationClient = useRef<CollaborationClient | null>(null);
   const broadcastChannel = useRef<BroadcastChannel | null>(null);
   const cursorPosition = useRef<Point | undefined>(undefined);
@@ -336,6 +341,39 @@ export function WorkspaceLayout() {
     setSelection(emptySelection);
   }
 
+  function createPrototypeLink(targetId: NodeId) {
+    if (!selection.activeId) {
+      return;
+    }
+    commit(createPrototypeLinkTransaction(prototypeIds.current.prototype("link"), selection.activeId, targetId, metadata("prototype-link")));
+  }
+
+  function startPrototypePreview(sourceId: NodeId) {
+    const frameId = findContainingFrameId(design, sourceId);
+    if (!frameId) {
+      return;
+    }
+    setPreviewBackStack([]);
+    setPreviewNodeId(frameId);
+  }
+
+  function previewNavigate(sourceId: NodeId) {
+    const targetId = navigatePrototype(design, sourceId);
+    if (!targetId) {
+      return;
+    }
+    setPreviewBackStack((current) => (previewNodeId ? [...current, previewNodeId] : current));
+    setPreviewNodeId(targetId);
+  }
+
+  function previewBack() {
+    setPreviewBackStack((current) => {
+      const previous = current.at(-1) ?? null;
+      setPreviewNodeId(previous);
+      return current.slice(0, -1);
+    });
+  }
+
   return (
     <main
       className="flex h-dvh min-h-[680px] flex-col overflow-hidden bg-desk-canvas text-desk-ink lg:flex-row"
@@ -385,7 +423,13 @@ export function WorkspaceLayout() {
           onCreateSnapshot={createNamedSnapshot}
           onRestoreSnapshot={restoreSnapshot}
           onBranchFromReplay={branchFromReplay}
+          onCreatePrototypeLink={createPrototypeLink}
+          onPreviewBack={previewBack}
+          onPreviewNavigate={previewNavigate}
+          onStartPreview={startPrototypePreview}
           onSelectComment={setActiveCommentId}
+          previewBackCount={previewBackStack.length}
+          previewNodeId={previewNodeId}
           remotePresences={remotePresences}
           selection={selection}
           setCommentAuthor={setCommentAuthor}
@@ -587,7 +631,13 @@ function CanvasShell({
   onCreateSnapshot,
   onRestoreSnapshot,
   onBranchFromReplay,
+  onCreatePrototypeLink,
+  onPreviewBack,
+  onPreviewNavigate,
+  onStartPreview,
   onSelectComment,
+  previewBackCount,
+  previewNodeId,
   remotePresences,
   selection,
   setCommentAuthor,
@@ -610,7 +660,13 @@ function CanvasShell({
   onCreateSnapshot: (name: string) => void;
   onRestoreSnapshot: (snapshotId: SnapshotId) => void;
   onBranchFromReplay: (step: number) => void;
+  onCreatePrototypeLink: (targetId: NodeId) => void;
+  onPreviewBack: () => void;
+  onPreviewNavigate: (sourceId: NodeId) => void;
+  onStartPreview: (sourceId: NodeId) => void;
   onSelectComment: (commentId: CommentId) => void;
+  previewBackCount: number;
+  previewNodeId: NodeId | null;
   remotePresences: readonly PresenceState[];
   selection: SelectionState;
   setCommentAuthor: (author: string) => void;
@@ -652,6 +708,16 @@ function CanvasShell({
       />
       <VersionHistoryPanel design={history.present} onCreateSnapshot={onCreateSnapshot} onRestoreSnapshot={onRestoreSnapshot} />
       <ReplayPanel history={history} initialDesign={history.past.length === 0 ? history.present : createStarterDesign()} onBranch={onBranchFromReplay} />
+      {previewNodeId ? <PreviewOverlay design={history.present} frameId={previewNodeId} onNavigate={onPreviewNavigate} /> : null}
+      <PrototypePanel
+        design={history.present}
+        onCreateLink={onCreatePrototypeLink}
+        onPreviewBack={onPreviewBack}
+        onStartPreview={onStartPreview}
+        previewBackCount={previewBackCount}
+        previewNodeId={previewNodeId}
+        selectedId={selection.activeId}
+      />
     </div>
   );
 }

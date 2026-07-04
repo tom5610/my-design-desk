@@ -60,6 +60,10 @@ export function createStarterDesign(): DesignFile {
   const iconId = ids.node("spark-icon");
   const imageId = ids.node("local-preview-image");
   const instanceId = ids.node("button-instance");
+  const dashboardFrameId = ids.node("dashboard-frame");
+  const dashboardTitleId = ids.node("dashboard-title");
+  const dashboardCardId = ids.node("dashboard-card");
+  const dashboardButtonId = ids.node("dashboard-back-button");
 
   const cardStyle: NodeStyle = {
     fills: [{ kind: "solid", color: "#ffffff" }],
@@ -222,6 +226,67 @@ export function createStarterDesign(): DesignFile {
         label: "View replay",
       },
     },
+    [dashboardFrameId]: {
+      id: dashboardFrameId,
+      kind: "Frame",
+      name: "AI Builder dashboard frame",
+      parentId: null,
+      locked: false,
+      visible: true,
+      geometry: { x: 1560, y: 0, width: 1440, height: 960, rotation: 0 },
+      constraints: defaultConstraints,
+      style: {
+        fills: [{ kind: "solid", color: "#f0fdfa" }],
+        opacity: 1,
+        shadows: [],
+      },
+      children: [dashboardTitleId, dashboardCardId, dashboardButtonId],
+    },
+    [dashboardTitleId]: {
+      id: dashboardTitleId,
+      kind: "Text",
+      name: "Dashboard title",
+      parentId: dashboardFrameId,
+      locked: false,
+      visible: true,
+      geometry: { x: 1680, y: 144, width: 640, height: 72, rotation: 0 },
+      constraints: defaultConstraints,
+      text: "Prototype destination dashboard",
+      textStyle: { ...headingText, fontSize: 40, lineHeight: 48 },
+    },
+    [dashboardCardId]: {
+      id: dashboardCardId,
+      kind: "Rectangle",
+      name: "Dashboard metrics card",
+      parentId: dashboardFrameId,
+      locked: false,
+      visible: true,
+      geometry: { x: 1680, y: 256, width: 520, height: 260, rotation: 0 },
+      constraints: defaultConstraints,
+      style: {
+        ...cardStyle,
+        fills: [{ kind: "solid", color: "#ffffff" }],
+      },
+    },
+    [dashboardButtonId]: {
+      id: dashboardButtonId,
+      kind: "Button",
+      name: "Back to landing button",
+      parentId: dashboardFrameId,
+      locked: false,
+      visible: true,
+      geometry: { x: 1680, y: 560, width: 188, height: 48, rotation: 0 },
+      constraints: defaultConstraints,
+      label: "Back to landing",
+      style: {
+        fills: [{ kind: "solid", color: "#0f766e" }],
+        opacity: 1,
+        radius: 8,
+        shadows: [],
+      },
+      textStyle: { ...bodyText, color: "#ffffff", fontWeight: 700 },
+      children: [],
+    },
   };
 
   return {
@@ -230,7 +295,7 @@ export function createStarterDesign(): DesignFile {
     name: "AI Builder Suite",
     createdAt: timestamp,
     updatedAt: timestamp,
-    rootIds: [frameId],
+    rootIds: [frameId, dashboardFrameId],
     nodes,
     components: {
       [buttonComponentId]: {

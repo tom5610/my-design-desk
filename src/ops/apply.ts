@@ -20,6 +20,8 @@ import type {
   NodeUpdateConstraintsOperation,
   NodeUpdateMetaOperation,
   NodeUpdateStyleOperation,
+  PrototypeCreateLinkOperation,
+  PrototypeDeleteLinkOperation,
   SnapshotCreateOperation,
   SnapshotDeleteOperation,
   SnapshotRestoreOperation,
@@ -574,6 +576,38 @@ function deleteSnapshot(design: DesignFile, operation: SnapshotDeleteOperation):
   return nextDesign;
 }
 
+function createPrototypeLink(design: DesignFile, operation: PrototypeCreateLinkOperation): DesignFile {
+  const { link } = operation.payload;
+  if (design.prototypeLinks[link.id]) {
+    throw new Error(`Cannot create duplicate prototype link ${link.id}`);
+  }
+  const nextDesign = {
+    ...design,
+    updatedAt: operation.timestamp,
+    prototypeLinks: {
+      ...design.prototypeLinks,
+      [link.id]: link,
+    },
+  };
+  assertValidDesign(nextDesign);
+  return nextDesign;
+}
+
+function deletePrototypeLink(design: DesignFile, operation: PrototypeDeleteLinkOperation): DesignFile {
+  if (!design.prototypeLinks[operation.payload.linkId]) {
+    return design;
+  }
+  const prototypeLinks = { ...design.prototypeLinks };
+  delete prototypeLinks[operation.payload.linkId];
+  const nextDesign = {
+    ...design,
+    updatedAt: operation.timestamp,
+    prototypeLinks,
+  };
+  assertValidDesign(nextDesign);
+  return nextDesign;
+}
+
 export function applyOperation(design: DesignFile, operation: DesignOperation): DesignFile {
   switch (operation.kind) {
     case "node.create":
@@ -616,6 +650,10 @@ export function applyOperation(design: DesignFile, operation: DesignOperation): 
       return restoreSnapshot(design, operation);
     case "snapshot.delete":
       return deleteSnapshot(design, operation);
+    case "prototype.createLink":
+      return createPrototypeLink(design, operation);
+    case "prototype.deleteLink":
+      return deletePrototypeLink(design, operation);
   }
 }
 

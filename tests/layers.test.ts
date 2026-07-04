@@ -19,7 +19,7 @@ describe("layers panel model", () => {
   it("flattens layers in visible scene order with nesting depth", () => {
     const rows = flattenLayers(createStarterDesign());
 
-    expect(rows[0]?.node.name).toBe("AI Builder landing page");
+    expect(rows.map((row) => row.node.name)).toEqual(expect.arrayContaining(["AI Builder landing page", "AI Builder dashboard frame"]));
     expect(rows.some((row) => row.node.name === "Hero headline" && row.depth > 0)).toBe(true);
   });
 

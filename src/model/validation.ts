@@ -101,6 +101,20 @@ export function validateDesign(design: DesignFile): ValidationResult {
     }
   }
 
+  for (const [linkId, link] of Object.entries(design.prototypeLinks)) {
+    if (link.id !== linkId) {
+      errors.push(`Prototype link key does not match link id: ${linkId}`);
+    }
+    if (!design.nodes[link.fromNodeId]) {
+      errors.push(`Prototype link ${linkId} references missing source ${link.fromNodeId}`);
+    }
+    if (!design.nodes[link.toNodeId]) {
+      errors.push(`Prototype link ${linkId} references missing target ${link.toNodeId}`);
+    } else if (design.nodes[link.toNodeId]?.kind !== "Frame") {
+      errors.push(`Prototype link ${linkId} target must be a frame`);
+    }
+  }
+
   return {
     valid: errors.length === 0,
     errors,

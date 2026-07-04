@@ -2,9 +2,9 @@
 
 ## Current State
 
-- Current milestone: 19 - Prototype Links And Preview Navigation
-- Previous milestone: 18 - Replay Journal, Scrubber, Branch From Here
-- Status: ready for prototype links after verified deterministic replay
+- Current milestone: 20 - Deterministic React/Tailwind Export CLI
+- Previous milestone: 19 - Prototype Links And Preview Navigation
+- Status: Milestone 19 complete locally; verification passed and ready for Milestone 20 after commit
 - Source spec: `docs/prompt.md`
 - Milestone contract: `docs/plans.md`
 - Runbook: `docs/implement.md`
@@ -562,33 +562,63 @@ Notes:
 - Replay currently uses the local committed history entries; future persisted replay can read server-sequenced operation journals from the same operation shape.
 - Branching creates a clean history from the replayed state and clears the current selection.
 
+### 19. Prototype Links And Preview Navigation
+
+Status: complete
+
+Scope completed:
+
+- Added deterministic prototype link operations for create/delete with validation, undo inversion, serialization, and collaboration/replay compatibility through the existing operation path.
+- Added prototype helpers for link transactions, containing-frame lookup, hotspot extraction, and on-click navigation.
+- Added a second starter root frame so the local demo has a real frame-to-frame prototype destination.
+- Added a prototype panel for selecting a hotspot, creating a target-frame link, starting preview from the source frame, and using back navigation.
+- Added a local preview overlay that lists clickable hotspots for the active frame and navigates through serialized prototype links.
+- Kept preview state outside the canonical `DesignFile` so navigation does not mutate editor scene data.
+- Added prototype unit tests for deterministic serialization, containing-frame lookup, and hotspot extraction.
+- Extended Playwright coverage to create a link, open preview, click a hotspot, navigate to the dashboard frame, and back out.
+- Updated the SVG render snapshot and layer-order test for the second root frame.
+- Preserved existing untracked `METHOD.md`; it remained outside the Milestone 19 commit scope.
+
+Verification:
+
+- `npm run lint` initially failed before handoff because the preview back stack count was referenced outside its component scope; passing after threading the count through `CanvasShell`.
+- `npm run typecheck` passed.
+- `npm test -- --update` updated the intentional SVG renderer snapshot after adding the dashboard frame.
+- `npm test` passed: 19 test files, 47 tests.
+- `npm run build` passed with Vite `8.1.3`.
+- `npm run test:e2e` initially exposed prototype panel pointer interception over older canvas flows; fixed by mounting the prototype panel only when there is selected, preview, or linked prototype state.
+- `npm run test:e2e -- -g "creates a prototype link and navigates preview"` passed.
+- `npm run test:e2e -- --workers=1` passed: 14 Playwright tests including prototype preview navigation, two-tab collaboration, comments, replay, version history, and snapping smoke.
+
+Notes:
+
+- The prototype panel stays hidden on a fresh canvas so it does not cover creation tools, comments, or canvas click targets.
+- Prototype preview currently renders a focused navigation overlay rather than clipping the full canvas to the active frame; the canonical link data and preview state are separated so Milestone 20 export can ignore transient preview state.
+
 ## Next Milestone
 
-### 19. Prototype Links And Preview Navigation
+### 20. Deterministic React/Tailwind Export CLI
 
 Planned scope:
 
-- Link creation mode.
-- Hotspots.
-- Preview mode.
-- Back navigation.
-- Multiple frames.
-- Transition metadata.
+- JSON export.
+- React/Tailwind component package codegen.
+- Asset copying.
+- Component generation.
+- CLI script.
 
 Planned verification:
 
-- `npm run lint`
-- `npm run typecheck`
-- `npm test`
-- `npm run build`
-- `npm run test:e2e`
-- Prototype graph tests.
-- Playwright preview smoke.
+- Codegen snapshot tests.
+- CLI smoke with `npm run export -- --input <design.json> --out <dir>`.
+- `npm run lint`.
+- `npm run typecheck`.
+- Existing regression tests as needed.
 
 Known risks:
 
-- Prototype links must remain deterministic and serializable.
-- Preview navigation should not mutate the editor scene.
+- Export must stay deterministic for identical input bytes.
+- Generated components should reuse the same scene/component model instead of duplicating renderer semantics.
 - Existing untracked `METHOD.md` remains outside milestone scope and will not be staged.
 
 ## Decisions Log
@@ -621,6 +651,7 @@ Known risks:
 | 2026-07-04 | Keep presence ephemeral and sync document edits through committed operations. | Collaboration state should feel live without polluting replay, export, snapshots, or canonical serialization. |
 | 2026-07-04 | Store snapshots as deterministic document slices instead of full recursive design files. | Snapshot restore needs diffable document state without recursively embedding snapshot history or transient ops. |
 | 2026-07-04 | Reconstruct replay from committed redo transactions before building persisted replay UI. | The existing operation spine already proves deterministic reconstruction and branch behavior without adding another event format. |
+| 2026-07-04 | Keep prototype preview state transient and serialize only prototype links. | Preview navigation must demo frame-to-frame flow without polluting export, replay, or canonical scene data. |
 
 ## Blockers
 
@@ -628,4 +659,4 @@ None.
 
 ## Handoff
 
-Start Milestone 19 by following `docs/implement.md`. Reread the active milestone, add deterministic prototype link operations and preview navigation, and preserve the untracked `METHOD.md` unless the user explicitly asks to include it.
+Start Milestone 20 by following `docs/implement.md`. Reread the active milestone, add deterministic React/Tailwind export CLI coverage, and preserve the untracked `METHOD.md` unless the user explicitly asks to include it.

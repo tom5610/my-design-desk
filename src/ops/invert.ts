@@ -352,6 +352,27 @@ export function invertOperation(designBefore: DesignFile, operation: DesignOpera
         },
       };
     }
+    case "prototype.createLink":
+      return {
+        ...inverseMetadata(operation, designBefore.updatedAt),
+        kind: "prototype.deleteLink",
+        payload: {
+          linkId: operation.payload.link.id,
+        },
+      };
+    case "prototype.deleteLink": {
+      const link = designBefore.prototypeLinks[operation.payload.linkId];
+      if (!link) {
+        throw new Error(`Cannot invert prototype link delete for missing link ${operation.payload.linkId}`);
+      }
+      return {
+        ...inverseMetadata(operation, designBefore.updatedAt),
+        kind: "prototype.createLink",
+        payload: {
+          link,
+        },
+      };
+    }
   }
 }
 

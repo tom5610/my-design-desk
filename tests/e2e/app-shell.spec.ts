@@ -202,3 +202,23 @@ test("replays history and branches from an earlier step", async ({ page }) => {
   await expect(page.locator('[data-node-name="Hero headline"]')).toHaveAttribute("x", "160");
   await expect(page.getByTestId("replay-panel")).toContainText("Step 0 / 0");
 });
+
+test("creates a prototype link and navigates preview", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/");
+
+  await page.locator('[data-node-name="Start editing button"]').click();
+  await page.getByLabel("Prototype target").selectOption({ label: "AI Builder dashboard frame" });
+  await expect(page.getByTestId("prototype-panel")).toContainText("1 links");
+
+  await page.getByLabel("Preview selected prototype").click();
+  await expect(page.getByTestId("prototype-preview-state")).toContainText("AI Builder landing page");
+  await expect(page.getByTestId("prototype-preview-overlay")).toContainText("Start editing button");
+  await page.getByTestId("prototype-hotspot").click();
+  await expect(page.getByTestId("prototype-preview-state")).toContainText("AI Builder dashboard frame");
+  await expect(page.getByTestId("prototype-preview-overlay")).toContainText("No hotspots on this frame.");
+  await page.getByLabel("Prototype back").click();
+  await expect(page.getByTestId("prototype-preview-state")).toContainText("AI Builder landing page");
+  await page.getByLabel("Prototype back").click();
+  await expect(page.getByTestId("prototype-preview-state")).toContainText("editor");
+});
