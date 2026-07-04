@@ -1,5 +1,5 @@
-import type { ComponentId, NodeId } from "../model/ids";
-import type { ComponentDefinition, ComponentRootNode, Constraints, Geometry, SceneNode } from "../model/scene";
+import type { CommentId, ComponentId, NodeId } from "../model/ids";
+import type { CommentThread, ComponentDefinition, ComponentRootNode, Constraints, Geometry, SceneNode } from "../model/scene";
 import type { NodeStyle } from "../model/styles";
 
 export type OperationMetadata = {
@@ -110,6 +110,44 @@ export type ComponentDeleteOperation = OperationMetadata & {
   };
 };
 
+export type CommentCreateOperation = OperationMetadata & {
+  kind: "comment.create";
+  payload: {
+    thread: CommentThread;
+  };
+};
+
+export type CommentDeleteOperation = OperationMetadata & {
+  kind: "comment.delete";
+  payload: {
+    commentId: CommentId;
+  };
+};
+
+export type CommentAddMessageOperation = OperationMetadata & {
+  kind: "comment.addMessage";
+  payload: {
+    commentId: CommentId;
+    message: CommentThread["messages"][number];
+  };
+};
+
+export type CommentRemoveMessageOperation = OperationMetadata & {
+  kind: "comment.removeMessage";
+  payload: {
+    commentId: CommentId;
+    messageId: string;
+  };
+};
+
+export type CommentSetResolvedOperation = OperationMetadata & {
+  kind: "comment.setResolved";
+  payload: {
+    commentId: CommentId;
+    resolved: boolean;
+  };
+};
+
 export type DesignOperation =
   | NodeCreateOperation
   | NodeUpdateGeometryOperation
@@ -122,7 +160,12 @@ export type DesignOperation =
   | NodeDeleteOperation
   | NodeRestoreOperation
   | ComponentCreateOperation
-  | ComponentDeleteOperation;
+  | ComponentDeleteOperation
+  | CommentCreateOperation
+  | CommentDeleteOperation
+  | CommentAddMessageOperation
+  | CommentRemoveMessageOperation
+  | CommentSetResolvedOperation;
 
 export type Transaction = {
   id: string;

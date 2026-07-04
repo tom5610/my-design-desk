@@ -2,9 +2,9 @@
 
 ## Current State
 
-- Current milestone: 15 - Comments, Pins, Threads, Resolve/Reopen
-- Previous milestone: 14 - Snapping, Alignment, And Spacing Guides
-- Status: ready for comments and annotations after verified snapping and guide work
+- Current milestone: 16 - Multiplayer Presence, Cursors, Selections, Live Edits
+- Previous milestone: 15 - Comments, Pins, Threads, Resolve/Reopen
+- Status: ready for realtime multiplayer collaboration after verified comments and annotations
 - Source spec: `docs/prompt.md`
 - Milestone contract: `docs/plans.md`
 - Runbook: `docs/implement.md`
@@ -443,18 +443,48 @@ Notes:
 - Resize handles remain visual foundations; guide math is ready for resize snapping when handle transforms are deepened.
 - Playwright asserts guide elements are present during drag and verifies the final snapped geometry because SVG guide line visibility is not reliable in Playwright's visibility heuristic.
 
+### 15. Comments, Pins, Threads, Resolve/Reopen
+
+Status: complete
+
+Scope completed:
+
+- Added deterministic comment commands for create thread, reply, resolve, and reopen.
+- Added comment operations for create/delete, add/remove message, and set resolved, with undo inversion.
+- Added comment validation so threads reference existing scene nodes.
+- Added comment mode in the top toolbar; canvas clicks create local comment pins.
+- Added SVG comment pins overlay with active/open/resolved visual states.
+- Added comments panel with local author name, threaded replies, resolve/reopen, and jump-to-pin.
+- Added viewport focusing for comment jump actions.
+- Added comment operation tests for persistence, replay determinism, and undo.
+- Added Playwright comments smoke for creating, replying, resolving, and jumping to a pin.
+- Preserved existing untracked `METHOD.md`; it remained outside the Milestone 15 commit scope.
+
+Verification:
+
+- `npm run typecheck` passed.
+- `npm run lint` passed.
+- `npm test` passed: 16 test files, 41 tests.
+- `npm run build` passed with Vite `8.1.3`.
+- `npm run test:e2e` passed: 10 Playwright tests including comments smoke.
+
+Notes:
+
+- New comments default to `Review this area` so comment creation remains one-click in comment mode; threaded replies provide user-entered content.
+- Comment jump centers the SVG viewport on the pin and highlights the active thread in the panel.
+
 ## Next Milestone
 
-### 15. Comments, Pins, Threads, Resolve/Reopen
+### 16. Multiplayer Presence, Cursors, Selections, Live Edits
 
 Planned scope:
 
-- Comment mode.
-- Canvas pins.
-- Threaded replies.
-- Local author name.
-- Resolve/reopen.
-- Comments panel with jump-to-pin.
+- Connect clients to WebSocket server.
+- Show presence list.
+- Live cursors.
+- Remote selections.
+- Optimistic edits.
+- Canonical reconciliation.
 
 Planned verification:
 
@@ -463,13 +493,13 @@ Planned verification:
 - `npm test`
 - `npm run build`
 - `npm run test:e2e`
-- Comment op tests.
-- Playwright comments smoke.
+- Two-tab Playwright smoke.
+- Sync determinism tests.
 
 Known risks:
 
-- Comments must persist in the canonical design model without interfering with node operations.
-- Comment pins need deterministic viewport navigation without a router or hosted service.
+- Existing local history state needs careful reconciliation with server-sequenced ops.
+- Presence must remain ephemeral and avoid polluting replay/export state.
 - Existing untracked `METHOD.md` remains outside milestone scope and will not be staged.
 
 ## Decisions Log
@@ -498,6 +528,7 @@ Known risks:
 | 2026-07-04 | Keep context menu actions on command helpers. | Context UI must not mutate scene state outside the operation path. |
 | 2026-07-04 | Resolve instances from hidden component masters at render time. | Master inheritance, overrides, detach, serialization, and future export should share one deterministic component model. |
 | 2026-07-04 | Apply snapping to pointer drag while preserving raw keyboard nudges. | Drag benefits from guides and snap targets, while keyboard nudge should remain precise one-pixel editing. |
+| 2026-07-04 | Store comments as canonical design threads and render pins from that model. | Comments must persist, replay, undo, and export from the same deterministic document state as nodes. |
 
 ## Blockers
 
@@ -505,4 +536,4 @@ None.
 
 ## Handoff
 
-Start Milestone 15 by following `docs/implement.md`. Reread the active milestone, add comments through deterministic model and operation paths, and preserve the untracked `METHOD.md` unless the user explicitly asks to include it.
+Start Milestone 16 by following `docs/implement.md`. Reread the active milestone, connect the local WebSocket collaboration path to editor state, and preserve the untracked `METHOD.md` unless the user explicitly asks to include it.

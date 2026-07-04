@@ -124,3 +124,24 @@ test("shows snapping guides while dragging a selected layer", async ({ page }) =
 
   await expect(page.getByTestId("selection-outline")).toHaveAttribute("x", "160");
 });
+
+test("creates, replies to, resolves, and jumps to a comment pin", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/");
+
+  await expect(page.getByTestId("comments-panel")).toBeVisible();
+  await page.getByRole("button", { name: "Comment" }).click();
+  await page.getByTestId("scene-svg").click({ position: { x: 620, y: 320 } });
+
+  await expect(page.getByTestId("comment-pin")).toHaveCount(1);
+  await expect(page.getByTestId("comments-panel")).toContainText("Review this area");
+
+  await page.getByLabel("Reply to comment 1").fill("Looks good");
+  await page.getByLabel("Reply to comment 1").press("Enter");
+  await expect(page.getByTestId("comments-panel")).toContainText("Looks good");
+
+  await page.getByLabel("Resolve comment 1").click();
+  await expect(page.getByTestId("comments-panel")).toContainText("Resolved");
+  await page.getByLabel("Jump to comment 1").click();
+  await expect(page.locator("[data-comment-card-id]").first()).toHaveClass(/border-pink-400/);
+});

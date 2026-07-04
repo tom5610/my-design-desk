@@ -231,6 +231,65 @@ export function invertOperation(designBefore: DesignFile, operation: DesignOpera
         },
       };
     }
+    case "comment.create":
+      return {
+        ...inverseMetadata(operation, designBefore.updatedAt),
+        kind: "comment.delete",
+        payload: {
+          commentId: operation.payload.thread.id,
+        },
+      };
+    case "comment.delete": {
+      const thread = designBefore.comments[operation.payload.commentId];
+      if (!thread) {
+        throw new Error(`Cannot invert comment delete for missing comment ${operation.payload.commentId}`);
+      }
+      return {
+        ...inverseMetadata(operation, designBefore.updatedAt),
+        kind: "comment.create",
+        payload: {
+          thread,
+        },
+      };
+    }
+    case "comment.addMessage":
+      return {
+        ...inverseMetadata(operation, designBefore.updatedAt),
+        kind: "comment.removeMessage",
+        payload: {
+          commentId: operation.payload.commentId,
+          messageId: operation.payload.message.id,
+        },
+      };
+    case "comment.removeMessage": {
+      const thread = designBefore.comments[operation.payload.commentId];
+      const message = thread?.messages.find((candidate) => candidate.id === operation.payload.messageId);
+      if (!thread || !message) {
+        throw new Error(`Cannot invert comment message removal for ${operation.payload.messageId}`);
+      }
+      return {
+        ...inverseMetadata(operation, designBefore.updatedAt),
+        kind: "comment.addMessage",
+        payload: {
+          commentId: thread.id,
+          message,
+        },
+      };
+    }
+    case "comment.setResolved": {
+      const thread = designBefore.comments[operation.payload.commentId];
+      if (!thread) {
+        throw new Error(`Cannot invert missing comment resolution ${operation.payload.commentId}`);
+      }
+      return {
+        ...inverseMetadata(operation, designBefore.updatedAt),
+        kind: "comment.setResolved",
+        payload: {
+          commentId: thread.id,
+          resolved: thread.resolved,
+        },
+      };
+    }
   }
 }
 

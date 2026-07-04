@@ -1,8 +1,8 @@
 import { AlignCenter, Grid3X3, Minus, Plus, RotateCcw, Ruler } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { defaultSnapSettings, defaultViewport, screenToDocument, snapMove, zoomAtPoint, type SnapGuide, type SnapSettings, type Viewport } from "../geometry";
-import type { NodeId } from "../model";
+import type { CommentId, CommentThread, NodeId, Point } from "../model";
 import { SvgScene } from "../render";
 import { clearSelection, selectOne, toggleSelection, type SelectionState } from "../selection";
 import { commitTransaction, redo, undo, type HistoryState } from "../store";
@@ -12,6 +12,7 @@ import { GuideOverlay, SelectionOverlay } from "./overlays";
 import { createNodeOperation, createToolIdFactory, creationTools, type CreationTool } from "../tools";
 import { CanvasContextMenu, type ContextMenuAction } from "../ui/contextMenu";
 import { ShortcutHelp } from "../ui/shortcuts";
+import { CommentPinsOverlay } from "../comments";
 
 const canvasSize = {
   width: 1440,
@@ -27,12 +28,24 @@ type DragState = {
 };
 
 export function SvgCanvas({
+  activeCommentId,
+  commentFocusKey,
+  commentMode,
+  comments,
   history,
+  onCreateComment,
+  onSelectComment,
   selection,
   setHistory,
   setSelection,
 }: {
+  activeCommentId: CommentId | null;
+  commentFocusKey: number;
+  commentMode: boolean;
+  comments: readonly CommentThread[];
   history: HistoryState;
+  onCreateComment: (point: Point, nodeId: NodeId) => void;
+  onSelectComment: (commentId: CommentId) => void;
   selection: SelectionState;
   setHistory: React.Dispatch<React.SetStateAction<HistoryState>>;
   setSelection: React.Dispatch<React.SetStateAction<SelectionState>>;
@@ -50,6 +63,23 @@ export function SvgCanvas({
   const design = history.present;
   const viewBoxWidth = canvasSize.width / viewport.zoom;
   const viewBoxHeight = canvasSize.height / viewport.zoom;
+
+  useEffect(() => {
+    if (!activeCommentId || commentFocusKey === 0) {
+      return;
+    }
+
+    const comment = comments.find((candidate) => candidate.id === activeCommentId);
+    if (!comment) {
+      return;
+    }
+
+    setViewport((current) => ({
+      ...current,
+      x: comment.position.x - canvasSize.width / current.zoom / 2,
+      y: comment.position.y - canvasSize.height / current.zoom / 2,
+    }));
+  }, [activeCommentId, commentFocusKey, comments]);
 
   function zoom(multiplier: number) {
     setViewport((current) => zoomAtPoint(current, { x: canvasSize.width / 2, y: canvasSize.height / 2 }, current.zoom * multiplier));
@@ -91,6 +121,15 @@ export function SvgCanvas({
 
   function handlePointerDown(event: React.PointerEvent<SVGSVGElement>) {
     setActiveGuides([]);
+    if (commentMode) {
+      const point = documentPointFromEvent(event);
+      const nodeId = (selectedNodeFromEvent(event) as NodeId | null) ?? design.rootIds[0];
+      if (nodeId) {
+        onCreateComment(point, nodeId);
+      }
+      return;
+    }
+
     if (activeTool !== "Select") {
       const parentId = design.rootIds[0] ?? null;
       const operation = createNodeOperation(activeTool, documentPointFromEvent(event), parentId, toolIds.current, metadata("create"));
@@ -295,6 +334,7 @@ export function SvgCanvas({
       >
         <SvgScene design={design} />
         <GuideOverlay guides={activeGuides} />
+        <CommentPinsOverlay activeCommentId={activeCommentId} comments={comments} onSelectComment={onSelectComment} />
         <SelectionOverlay design={design} selectedIds={selection.selectedIds} />
       </svg>
 

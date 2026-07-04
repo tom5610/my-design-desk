@@ -91,6 +91,16 @@ export function validateDesign(design: DesignFile): ValidationResult {
     }
   }
 
+  for (const [commentId, comment] of Object.entries(design.comments)) {
+    if (comment.id !== commentId) {
+      errors.push(`Comment key does not match comment id: ${commentId}`);
+    }
+
+    if (!design.nodes[comment.nodeId]) {
+      errors.push(`Comment ${commentId} references missing node ${comment.nodeId}`);
+    }
+  }
+
   return {
     valid: errors.length === 0,
     errors,

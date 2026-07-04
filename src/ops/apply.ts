@@ -5,6 +5,11 @@ import type {
   DesignOperation,
   ComponentCreateOperation,
   ComponentDeleteOperation,
+  CommentAddMessageOperation,
+  CommentCreateOperation,
+  CommentDeleteOperation,
+  CommentRemoveMessageOperation,
+  CommentSetResolvedOperation,
   NodeCreateOperation,
   NodeDeleteOperation,
   NodeReorderOperation,
@@ -416,6 +421,103 @@ function deleteComponent(design: DesignFile, operation: ComponentDeleteOperation
   return nextDesign;
 }
 
+function createComment(design: DesignFile, operation: CommentCreateOperation): DesignFile {
+  const { thread } = operation.payload;
+  if (design.comments[thread.id]) {
+    throw new Error(`Cannot create duplicate comment ${thread.id}`);
+  }
+
+  const nextDesign = {
+    ...design,
+    updatedAt: operation.timestamp,
+    comments: {
+      ...design.comments,
+      [thread.id]: thread,
+    },
+  };
+  assertValidDesign(nextDesign);
+  return nextDesign;
+}
+
+function deleteComment(design: DesignFile, operation: CommentDeleteOperation): DesignFile {
+  if (!design.comments[operation.payload.commentId]) {
+    return design;
+  }
+
+  const comments = { ...design.comments };
+  delete comments[operation.payload.commentId];
+  const nextDesign = {
+    ...design,
+    updatedAt: operation.timestamp,
+    comments,
+  };
+  assertValidDesign(nextDesign);
+  return nextDesign;
+}
+
+function addCommentMessage(design: DesignFile, operation: CommentAddMessageOperation): DesignFile {
+  const thread = design.comments[operation.payload.commentId];
+  if (!thread) {
+    throw new Error(`Cannot add message to missing comment ${operation.payload.commentId}`);
+  }
+
+  const nextDesign = {
+    ...design,
+    updatedAt: operation.timestamp,
+    comments: {
+      ...design.comments,
+      [thread.id]: {
+        ...thread,
+        messages: [...thread.messages, operation.payload.message],
+      },
+    },
+  };
+  assertValidDesign(nextDesign);
+  return nextDesign;
+}
+
+function removeCommentMessage(design: DesignFile, operation: CommentRemoveMessageOperation): DesignFile {
+  const thread = design.comments[operation.payload.commentId];
+  if (!thread) {
+    throw new Error(`Cannot remove message from missing comment ${operation.payload.commentId}`);
+  }
+
+  const nextDesign = {
+    ...design,
+    updatedAt: operation.timestamp,
+    comments: {
+      ...design.comments,
+      [thread.id]: {
+        ...thread,
+        messages: thread.messages.filter((message) => message.id !== operation.payload.messageId),
+      },
+    },
+  };
+  assertValidDesign(nextDesign);
+  return nextDesign;
+}
+
+function setCommentResolved(design: DesignFile, operation: CommentSetResolvedOperation): DesignFile {
+  const thread = design.comments[operation.payload.commentId];
+  if (!thread) {
+    throw new Error(`Cannot update missing comment ${operation.payload.commentId}`);
+  }
+
+  const nextDesign = {
+    ...design,
+    updatedAt: operation.timestamp,
+    comments: {
+      ...design.comments,
+      [thread.id]: {
+        ...thread,
+        resolved: operation.payload.resolved,
+      },
+    },
+  };
+  assertValidDesign(nextDesign);
+  return nextDesign;
+}
+
 export function applyOperation(design: DesignFile, operation: DesignOperation): DesignFile {
   switch (operation.kind) {
     case "node.create":
@@ -442,6 +544,16 @@ export function applyOperation(design: DesignFile, operation: DesignOperation): 
       return createComponent(design, operation);
     case "component.delete":
       return deleteComponent(design, operation);
+    case "comment.create":
+      return createComment(design, operation);
+    case "comment.delete":
+      return deleteComment(design, operation);
+    case "comment.addMessage":
+      return addCommentMessage(design, operation);
+    case "comment.removeMessage":
+      return removeCommentMessage(design, operation);
+    case "comment.setResolved":
+      return setCommentResolved(design, operation);
   }
 }
 

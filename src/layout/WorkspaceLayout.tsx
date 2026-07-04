@@ -3,6 +3,7 @@ import {
   Component,
   Eye,
   Layers,
+  MessageSquare,
   MousePointer2,
   Play,
   Share2,
@@ -19,7 +20,7 @@ import { ModalShell } from "../ui/ModalShell";
 import { ToastStack } from "../ui/ToastStack";
 import { SvgCanvas } from "../canvas";
 import { createStarterDesign } from "../demo";
-import { createDeterministicIdFactory, type ComponentId, type ComponentOverrides, type DesignFile, type NodeId } from "../model";
+import { createDeterministicIdFactory, type CommentId, type CommentThread, type ComponentId, type ComponentOverrides, type DesignFile, type NodeId, type Point } from "../model";
 import { createLayerMetaTransaction, createReorderTransaction, LayersPanel } from "../panels/layers";
 import { AssetsPanel } from "../panels/assets";
 import { InspectorPanel } from "../panels/inspector";
@@ -27,11 +28,15 @@ import { selectOne, type SelectionState, emptySelection } from "../selection";
 import { commitTransaction, createHistoryState, type HistoryState } from "../store";
 import { createTransaction, type OperationMetadata } from "../ops";
 import {
+  createCommentReplyTransaction,
+  createCommentResolvedTransaction,
+  createCommentThreadTransaction,
   createComponentFromSelectionTransaction,
   createDetachInstanceTransaction,
   createInsertInstanceTransaction,
   createUpdateInstanceOverridesTransaction,
 } from "../commands";
+import { CommentsPanel } from "../comments";
 
 const tools = [
   { label: "Select", icon: MousePointer2, active: true },
@@ -43,11 +48,17 @@ const tools = [
 export function WorkspaceLayout() {
   const initialDesign = useMemo(() => createStarterDesign(), []);
   const [history, setHistory] = useState<HistoryState>(() => createHistoryState(initialDesign));
+  const [activeCommentId, setActiveCommentId] = useState<CommentId | null>(null);
+  const [commentAuthor, setCommentAuthor] = useState("Local reviewer");
+  const [commentFocusKey, setCommentFocusKey] = useState(0);
+  const [commentMode, setCommentMode] = useState(false);
   const [selection, setSelection] = useState<SelectionState>(emptySelection);
   const [leftTab, setLeftTab] = useState<"layers" | "assets">("layers");
   const opCounter = useRef(0);
+  const commentIds = useRef(createDeterministicIdFactory("workspace-comments"));
   const componentIds = useRef(createDeterministicIdFactory("workspace-components"));
   const design = history.present;
+  const comments = Object.values(design.comments).sort((left, right) => left.id.localeCompare(right.id));
 
   function metadata(kind: string, index = 0): OperationMetadata {
     opCounter.current += 1;
@@ -116,6 +127,48 @@ export function WorkspaceLayout() {
     commit(createUpdateInstanceOverridesTransaction(nodeId, overrides, metadata("component-override")));
   }
 
+  function createComment(point: Point, nodeId: NodeId) {
+    const commentId = commentIds.current.comment("pin");
+    const messageId = `${commentId}_message_${comments.length + 1}`;
+    commit(
+      createCommentThreadTransaction({
+        author: commentAuthor || "Local reviewer",
+        body: "Review this area",
+        commentId,
+        createdAt: "2026-07-04T09:00:00.000Z",
+        messageId,
+        metadata: metadata("comment-create"),
+        nodeId,
+        position: point,
+      }),
+    );
+    setActiveCommentId(commentId);
+    setCommentMode(false);
+  }
+
+  function replyToComment(commentId: CommentId, body: string) {
+    const messageId = `${commentId}_reply_${opCounter.current + 1}`;
+    commit(
+      createCommentReplyTransaction({
+        author: commentAuthor || "Local reviewer",
+        body,
+        commentId,
+        createdAt: "2026-07-04T09:00:00.000Z",
+        messageId,
+        metadata: metadata("comment-reply"),
+      }),
+    );
+  }
+
+  function setCommentResolved(commentId: CommentId, resolved: boolean) {
+    commit(createCommentResolvedTransaction(commentId, resolved, metadata("comment-resolve")));
+  }
+
+  function jumpToComment(commentId: CommentId) {
+    setActiveCommentId(commentId);
+    setCommentFocusKey((current) => current + 1);
+  }
+
   return (
     <main
       className="flex h-dvh min-h-[680px] flex-col overflow-hidden bg-desk-canvas text-desk-ink lg:flex-row"
@@ -142,8 +195,24 @@ export function WorkspaceLayout() {
       />
 
       <section className="flex min-h-0 min-w-0 flex-1 flex-col">
-        <TopToolbar />
-        <CanvasShell history={history} selection={selection} setHistory={setHistory} setSelection={setSelection} />
+        <TopToolbar commentMode={commentMode} onToggleCommentMode={() => setCommentMode((current) => !current)} />
+        <CanvasShell
+          activeCommentId={activeCommentId}
+          commentFocusKey={commentFocusKey}
+          commentMode={commentMode}
+          comments={comments}
+          history={history}
+          onCreateComment={createComment}
+          onJumpToComment={jumpToComment}
+          onReplyToComment={replyToComment}
+          onResolveComment={setCommentResolved}
+          onSelectComment={setActiveCommentId}
+          selection={selection}
+          setCommentAuthor={setCommentAuthor}
+          setHistory={setHistory}
+          setSelection={setSelection}
+          commentAuthor={commentAuthor}
+        />
         <MobilePanelSummary />
         <footer className="flex h-9 shrink-0 items-center justify-between border-t border-desk-line bg-white px-4 text-xs text-desk-muted">
           <span>Session: local-demo</span>
@@ -245,7 +314,7 @@ function LeftPanel({
   );
 }
 
-function TopToolbar() {
+function TopToolbar({ commentMode, onToggleCommentMode }: { commentMode: boolean; onToggleCommentMode: () => void }) {
   return (
     <header
       className="flex h-auto shrink-0 flex-col gap-2 border-b border-desk-line bg-white p-3 sm:h-14 sm:flex-row sm:items-center sm:justify-between sm:px-4 sm:py-0"
@@ -290,6 +359,15 @@ function TopToolbar() {
           <Eye size={15} aria-hidden="true" />
           Preview
         </button>
+        <button
+          aria-pressed={commentMode}
+          className={`flex shrink-0 items-center gap-2 rounded border border-desk-line px-3 py-2 text-xs font-medium ${commentMode ? "bg-desk-ink text-white" : ""}`}
+          onClick={onToggleCommentMode}
+          type="button"
+        >
+          <MessageSquare size={15} aria-hidden="true" />
+          Comment
+        </button>
         <button className="flex shrink-0 items-center gap-2 rounded bg-desk-accent px-3 py-2 text-xs font-semibold text-white">
           <Share2 size={15} aria-hidden="true" />
           Share
@@ -300,13 +378,35 @@ function TopToolbar() {
 }
 
 function CanvasShell({
+  activeCommentId,
+  commentAuthor,
+  commentFocusKey,
+  commentMode,
+  comments,
   history,
+  onCreateComment,
+  onJumpToComment,
+  onReplyToComment,
+  onResolveComment,
+  onSelectComment,
   selection,
+  setCommentAuthor,
   setHistory,
   setSelection,
 }: {
+  activeCommentId: CommentId | null;
+  commentAuthor: string;
+  commentFocusKey: number;
+  commentMode: boolean;
+  comments: readonly CommentThread[];
   history: HistoryState;
+  onCreateComment: (point: Point, nodeId: NodeId) => void;
+  onJumpToComment: (commentId: CommentId) => void;
+  onReplyToComment: (commentId: CommentId, body: string) => void;
+  onResolveComment: (commentId: CommentId, resolved: boolean) => void;
+  onSelectComment: (commentId: CommentId) => void;
   selection: SelectionState;
+  setCommentAuthor: (author: string) => void;
   setHistory: React.Dispatch<React.SetStateAction<HistoryState>>;
   setSelection: React.Dispatch<React.SetStateAction<SelectionState>>;
 }) {
@@ -319,7 +419,27 @@ function CanvasShell({
         <span className="size-2 rounded-full bg-emerald-500" />
         100% · Draft saved locally
       </div>
-      <SvgCanvas history={history} selection={selection} setHistory={setHistory} setSelection={setSelection} />
+      <SvgCanvas
+        activeCommentId={activeCommentId}
+        commentFocusKey={commentFocusKey}
+        commentMode={commentMode}
+        comments={comments}
+        history={history}
+        onCreateComment={onCreateComment}
+        onSelectComment={onSelectComment}
+        selection={selection}
+        setHistory={setHistory}
+        setSelection={setSelection}
+      />
+      <CommentsPanel
+        activeCommentId={activeCommentId}
+        author={commentAuthor}
+        comments={comments}
+        onAuthorChange={setCommentAuthor}
+        onJumpToComment={onJumpToComment}
+        onReply={onReplyToComment}
+        onResolve={onResolveComment}
+      />
     </div>
   );
 }
