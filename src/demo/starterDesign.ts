@@ -177,7 +177,7 @@ export function createStarterDesign(): DesignFile {
       visible: true,
       geometry: { x: 900, y: 484, width: 280, height: 120, rotation: 0 },
       constraints: defaultConstraints,
-      src: "/assets/demo-preview-placeholder.png",
+      src: "/assets/demo-preview-placeholder.svg",
       alt: "Preview of generated design output",
       style: cardStyle,
     },

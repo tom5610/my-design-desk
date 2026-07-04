@@ -2,9 +2,9 @@
 
 ## Current State
 
-- Current milestone: 21 - Demo Projects, Polish, Performance, Final Hardening
-- Previous milestone: 20 - Deterministic React/Tailwind Export CLI
-- Status: Milestone 20 complete locally; verification passed and ready for Milestone 21 after commit
+- Current milestone: complete - all 21 planned milestones
+- Previous milestone: 21 - Demo Projects, Polish, Performance, Final Hardening
+- Status: Milestone 21 complete and committed; final verification passed
 - Source spec: `docs/prompt.md`
 - Milestone contract: `docs/plans.md`
 - Runbook: `docs/implement.md`
@@ -595,8 +595,6 @@ Notes:
 - The prototype panel stays hidden on a fresh canvas so it does not cover creation tools, comments, or canvas click targets.
 - Prototype preview currently renders a focused navigation overlay rather than clipping the full canvas to the active frame; the canonical link data and preview state are separated so Milestone 20 export can ignore transient preview state.
 
-## Next Milestone
-
 ### 20. Deterministic React/Tailwind Export CLI
 
 Status: complete
@@ -629,34 +627,40 @@ Notes:
 - The generated export package intentionally uses the canonical model as input and does not depend on browser/editor state.
 - Missing local assets do not fail export; they are listed in the asset manifest with `copied: false`, while existing local assets are copied into the deterministic output path.
 
-## Next Milestone
-
 ### 21. Demo Projects, Polish, Performance, Final Hardening
 
-Planned scope:
+Status: complete
 
-- Tracked AI builder suite starter files.
-- Local generated assets.
-- Polish, toasts, shortcut modal, and demo banner.
-- Performance guardrails.
-- Architecture documentation finalization.
+Scope completed:
 
-Planned verification:
+- Added tracked local SVG preview asset under `public/assets`.
+- Updated the starter design image node to reference the tracked local asset so export can copy it.
+- Added tracked demo project metadata for AI Builder Suite, Ops Dashboard, and Mobile Assistant.
+- Updated the demo project picker with the tracked metadata and clearer local/open states.
+- Added a visible demo mode banner, session-aware local share link, updated footer state, and additional local export toast.
+- Filled the modal shell with shortcut content while keeping the existing interactive shortcut overlay intact.
+- Added `docs/architecture.md` covering the data model, rendering pipeline, operations/history, sync, replay, prototype preview, export, and performance guardrails.
+- Added performance guardrail helpers and a test proving the starter demo stays below node/root/operation thresholds.
+- Updated export snapshots for the tracked SVG asset.
+- Preserved existing untracked `METHOD.md`; it remained outside the Milestone 21 commit scope.
 
-- `npm run lint`.
-- `npm run typecheck`.
-- `npm test`.
-- `npm run build`.
-- `npm run test:e2e`.
-- Manual two-tab demo check.
-- Export CLI smoke.
+Verification:
 
-Known risks:
+- `npm run lint` passed.
+- `npm run typecheck` passed.
+- `npm test -- --update` intentionally updated the export snapshot after changing the local preview asset from `.png` to `.svg`.
+- `npm test` passed: 21 test files, 51 tests.
+- `npm run build` passed with Vite `8.1.3`.
+- `npm run test:e2e -- --workers=1` passed: 14 Playwright tests including shell, mobile layout, creation, comments, two-tab collaboration, version history, replay, and prototype preview navigation.
+- `npm run export -- --input /tmp/design-desk-export-smoke/input-m21.json --out /tmp/design-desk-export-smoke/out-m21` passed.
+- Export smoke produced the React/Tailwind package and copied `public/assets/demo-preview-placeholder.svg`.
+- Export asset manifest recorded the SVG asset with `copied: true`.
 
-- Final polish must not bypass the deterministic scene, operation, replay, sync, or export spine.
-- Demo assets must remain local and tracked.
-- Final architecture documentation should describe the implemented system rather than restating the plan.
-- Existing untracked `METHOD.md` remains outside milestone scope and will not be staged.
+Notes:
+
+- The final Playwright suite covers the manual two-tab demo path through the local browser/server flow.
+- Final runtime remains fully local through `npm run dev`.
+- No further planned milestone remains after the Milestone 21 commit.
 
 ## Decisions Log
 
@@ -690,6 +694,7 @@ Known risks:
 | 2026-07-04 | Reconstruct replay from committed redo transactions before building persisted replay UI. | The existing operation spine already proves deterministic reconstruction and branch behavior without adding another event format. |
 | 2026-07-04 | Keep prototype preview state transient and serialize only prototype links. | Preview navigation must demo frame-to-frame flow without polluting export, replay, or canonical scene data. |
 | 2026-07-04 | Generate export files from the canonical scene model instead of renderer DOM output. | The CLI must work without the UI and produce deterministic React/Tailwind files from serialized input. |
+| 2026-07-04 | Keep final hardening additive around the deterministic spine. | Demo polish, assets, and docs should improve the local demo without changing operation authority late in the build. |
 
 ## Blockers
 
@@ -697,4 +702,4 @@ None.
 
 ## Handoff
 
-Start Milestone 21 by following `docs/implement.md`. Reread the active milestone, finalize demo assets, polish, performance guardrails, architecture documentation, full verification, and preserve the untracked `METHOD.md` unless the user explicitly asks to include it.
+All 21 planned milestones are implemented locally. Before final handoff, commit Milestone 21, confirm the final worktree contains only unrelated untracked `METHOD.md`, and start the local app with `npm run dev` for the user-facing URL.

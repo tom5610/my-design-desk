@@ -20,8 +20,8 @@ describe("deterministic export codegen", () => {
   it("collects image assets into deterministic output paths", () => {
     expect(collectExportAssets(createStarterDesign())).toEqual([
       {
-        outputPath: "public/assets/demo-preview-placeholder.png",
-        source: "/assets/demo-preview-placeholder.png",
+        outputPath: "public/assets/demo-preview-placeholder.svg",
+        source: "/assets/demo-preview-placeholder.svg",
       },
     ]);
   });

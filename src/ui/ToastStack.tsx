@@ -5,6 +5,10 @@ export function ToastStack() {
         <span className="font-semibold text-desk-ink">Local autosave</span>
         <span className="block text-desk-muted">Session store is ready.</span>
       </div>
+      <div className="rounded border border-desk-line bg-white px-3 py-2 text-xs shadow-panel">
+        <span className="font-semibold text-desk-ink">Export ready</span>
+        <span className="block text-desk-muted">React/Tailwind CLI is local.</span>
+      </div>
     </div>
   );
 }

@@ -6,8 +6,8 @@ exports[`deterministic export codegen > generates stable React/Tailwind package 
     "content": "{
   "assets": [
     {
-      "outputPath": "public/assets/demo-preview-placeholder.png",
-      "source": "/assets/demo-preview-placeholder.png"
+      "outputPath": "public/assets/demo-preview-placeholder.svg",
+      "source": "/assets/demo-preview-placeholder.svg"
     }
   ]
 }
@@ -362,7 +362,7 @@ exports[`deterministic export codegen > generates stable React/Tailwind package 
       "locked": false,
       "name": "Local preview image",
       "parentId": "node_ai-builder-suite_hero-group_0002",
-      "src": "/assets/demo-preview-placeholder.png",
+      "src": "/assets/demo-preview-placeholder.svg",
       "style": {
         "fills": [
           {
@@ -683,7 +683,7 @@ export function PrimaryButton({ style }: { style?: CSSProperties }) {
       </div>
       <svg className="absolute overflow-visible" style={{ position: "absolute", left: 824, top: 484, width: 48, height: 48 }} viewBox="0 0 24 24"><path d={"M12 2l2.8 6.2L21 11l-6.2 2.8L12 20l-2.8-6.2L3 11l6.2-2.8L12 2z"} fill={"#0f766e"} /></svg>
       <div className="absolute overflow-hidden" style={{ position: "absolute", left: 900, top: 484, width: 280, height: 120, backgroundColor: "#ffffff", borderRadius: 16, opacity: 1, border: "1px solid #d0d5dd", boxShadow: "0px 18px 40px -18px rgba(17, 24, 39, 0.26)" }}>
-        <img alt={"Preview of generated design output"} className="size-full object-cover" src={"/assets/demo-preview-placeholder.png"} />
+        <img alt={"Preview of generated design output"} className="size-full object-cover" src={"/assets/demo-preview-placeholder.svg"} />
       </div>
       <button className="absolute flex items-center justify-center text-center" style={{ position: "absolute", left: 356, top: 472, width: 160, height: 48, backgroundColor: "#111827", borderRadius: 8, opacity: 1, color: "#ffffff", fontFamily: "Inter", fontSize: 16, fontWeight: 700 }} type="button">
         {"View replay"}

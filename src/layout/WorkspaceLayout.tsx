@@ -406,6 +406,7 @@ export function WorkspaceLayout() {
           commentMode={commentMode}
           onlineCount={remotePresences.length + (collabStatus === "connected" ? 1 : 0)}
           onToggleCommentMode={() => setCommentMode((current) => !current)}
+          sessionId={sessionId}
         />
         <CanvasShell
           activeCommentId={activeCommentId}
@@ -439,8 +440,8 @@ export function WorkspaceLayout() {
         />
         <MobilePanelSummary />
         <footer className="flex h-9 shrink-0 items-center justify-between border-t border-desk-line bg-white px-4 text-xs text-desk-muted">
-          <span>Session: local-demo</span>
-          <span>Milestone 6 workspace shell</span>
+          <span>Session: {sessionId}</span>
+          <span>Design Desk local demo</span>
         </footer>
       </section>
 
@@ -544,12 +545,14 @@ function TopToolbar({
   commentMode,
   onlineCount,
   onToggleCommentMode,
+  sessionId,
 }: {
   actorName: string;
   collabStatus: "connecting" | "connected" | "offline";
   commentMode: boolean;
   onlineCount: number;
   onToggleCommentMode: () => void;
+  sessionId: string;
 }) {
   return (
     <header
@@ -587,6 +590,10 @@ function TopToolbar({
       </div>
 
       <div className="flex items-center gap-2 overflow-x-auto">
+        <div className="flex shrink-0 items-center gap-2 rounded bg-teal-50 px-3 py-2 text-xs font-semibold text-teal-800" data-testid="demo-mode-banner">
+          <Sparkles size={14} aria-hidden="true" />
+          Demo mode
+        </div>
         <button className="flex shrink-0 items-center gap-2 rounded border border-desk-line px-3 py-2 text-xs font-medium" data-testid="presence-list">
           <Users size={15} aria-hidden="true" />
           {collabStatus === "connected" ? `${onlineCount} online` : "Offline"}
@@ -605,10 +612,10 @@ function TopToolbar({
           <MessageSquare size={15} aria-hidden="true" />
           Comment
         </button>
-        <button className="flex shrink-0 items-center gap-2 rounded bg-desk-accent px-3 py-2 text-xs font-semibold text-white">
+        <a className="flex shrink-0 items-center gap-2 rounded bg-desk-accent px-3 py-2 text-xs font-semibold text-white" href={`?sessionId=${encodeURIComponent(sessionId)}`}>
           <Share2 size={15} aria-hidden="true" />
           Share
-        </button>
+        </a>
       </div>
     </header>
   );

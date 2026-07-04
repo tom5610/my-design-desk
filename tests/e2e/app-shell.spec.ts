@@ -10,6 +10,8 @@ test("loads the professional workspace shell on desktop", async ({ page }) => {
   await expect(page.getByTestId("right-inspector")).toBeVisible();
   await expect(page.getByTestId("canvas-shell")).toBeVisible();
   await expect(page.getByTestId("demo-project-picker")).toBeVisible();
+  await expect(page.getByTestId("demo-mode-banner")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Share" })).toHaveAttribute("href", /sessionId=local-demo/);
   await expect(page.getByTestId("scene-svg")).toBeVisible();
   await expect(page.locator('[data-node-name="Hero headline"]')).toBeVisible();
 });

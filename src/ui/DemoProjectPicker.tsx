@@ -1,8 +1,4 @@
-const projects = [
-  { name: "AI Landing", meta: "Marketing frame" },
-  { name: "Ops Dashboard", meta: "Analytics mock" },
-  { name: "Mobile Assistant", meta: "Phone flow" },
-];
+import { demoProjects } from "../demo";
 
 export function DemoProjectPicker() {
   return (
@@ -12,13 +8,13 @@ export function DemoProjectPicker() {
         <button className="rounded border border-desk-line px-2 py-1 text-xs font-medium">Open</button>
       </div>
       <div className="space-y-2">
-        {projects.map((project) => (
-          <button className="flex w-full items-center justify-between rounded border border-desk-line px-3 py-2 text-left" key={project.name}>
+        {demoProjects.map((project, index) => (
+          <button className="flex w-full items-center justify-between rounded border border-desk-line px-3 py-2 text-left hover:border-teal-600 hover:bg-teal-50" key={project.id}>
             <span>
               <span className="block text-sm font-medium">{project.name}</span>
               <span className="block text-xs text-desk-muted">{project.meta}</span>
             </span>
-            <span className="text-xs text-desk-muted">Local</span>
+            <span className="text-xs text-desk-muted">{index === 0 ? "Open" : "Local"}</span>
           </button>
         ))}
       </div>
