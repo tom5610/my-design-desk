@@ -2,9 +2,9 @@
 
 ## Current State
 
-- Current milestone: 9 - Node Creation And Editing
-- Previous milestone: 8 - Selection, Handles, Transforms, And Keyboard Basics
-- Status: ready for node creation tools after verified selection and transforms
+- Current milestone: 10 - Layers Tree, Assets, Search, And Reorder
+- Previous milestone: 9 - Node Creation And Editing
+- Status: ready for layers and assets panels after verified node creation tools
 - Source spec: `docs/prompt.md`
 - Milestone contract: `docs/plans.md`
 - Runbook: `docs/implement.md`
@@ -258,15 +258,43 @@ Notes:
 - Resize and rotation handles are visual foundations in this milestone; full pointer resize/rotate behavior can be deepened in later transform work.
 - Copy/paste currently duplicates the active selection locally; richer clipboard serialization can build on the same command path.
 
+### 9. Node Creation And Editing
+
+Status: complete
+
+Scope completed:
+
+- Added deterministic node creation tool definitions for Frame, Group, Rectangle, Ellipse, Line, Text, Image, Button, Icon, and ChartPlaceholder.
+- Added `createNodeOperation` to generate `node.create` operations with stable defaults.
+- Added a compact canvas creation palette with select and creation tool modes.
+- Wired canvas clicks in creation mode to commit `node.create` operations, select the new node, and return to select mode.
+- Added creation op tests proving every Milestone 9 node kind can be created, serialized, and replayed through the ops engine.
+- Added deterministic ID tests for creation sequences.
+- Added Playwright creation smoke for creating and selecting a rectangle from the canvas tools.
+- Preserved existing untracked `METHOD.md`; it remained outside the Milestone 9 commit scope.
+
+Verification:
+
+- `npm run lint` passed.
+- `npm run typecheck` passed.
+- `npm test` passed: 9 test files, 23 tests.
+- `npm run build` passed with Vite `8.1.3`.
+- `npm run test:e2e` passed: 4 Playwright tests including rectangle creation smoke.
+
+Notes:
+
+- Created image nodes render as local SVG placeholders until tracked asset handling is added.
+- Component creation remains reserved for the component-system milestone.
+
 ## Next Milestone
 
-### 9. Node Creation And Editing
+### 10. Layers Tree, Assets, Search, And Reorder
 
 Planned scope:
 
-- Add tools for Frame, Group, Rectangle, Ellipse, Line, Text, Image URL, Button, Icon SVG, and Chart placeholder.
-- Ensure every required node kind can be created, selected, edited at a basic level, serialized, and replayed.
-- Keep creation operations deterministic.
+- Build left panel layers tree with nesting, search, jump to layer, visibility, lock, rename, and reorder.
+- Add assets tab shell for colors, text styles, and components.
+- Ensure layers reflect scene order and lock/visibility affect hit-testing and rendering.
 
 Planned verification:
 
@@ -274,14 +302,13 @@ Planned verification:
 - `npm run typecheck`
 - `npm test`
 - `npm run build`
-- Creation op tests.
-- Renderer snapshots.
-- Playwright creation smoke.
+- Layers tests.
+- Playwright layers smoke.
 
 Known risks:
 
-- Tool UI can expand too far; keep Milestone 9 focused on basic creation and edit surfaces.
-- New node defaults must remain deterministic and serializable.
+- Layer panel can drift into full inspector behavior; keep this milestone focused on hierarchy, assets shell, and reordering.
+- Visibility/lock must share the scene model rather than become panel-only UI state.
 - Existing untracked `METHOD.md` remains outside milestone scope and will not be staged.
 
 ## Decisions Log
@@ -304,6 +331,7 @@ Known risks:
 | 2026-07-04 | Keep shell UI behavior shallow in Milestone 6. | Interaction-heavy canvas behavior starts in the SVG renderer and selection milestones. |
 | 2026-07-04 | Keep Milestone 7 hit-testing axis-aligned. | Rotation-aware transform math belongs with the transform milestone rather than the first renderer slice. |
 | 2026-07-04 | Route keyboard transforms through operations and history. | Selection UI must not become a parallel state mutation path. |
+| 2026-07-04 | Add creation tools as deterministic `node.create` operations. | Creation, selection, replay, and serialization should all share the same operation path. |
 
 ## Blockers
 
@@ -311,4 +339,4 @@ None.
 
 ## Handoff
 
-Start Milestone 9 by following `docs/implement.md`. Reread the active milestone, add deterministic creation tools for required node kinds, and preserve the untracked `METHOD.md` unless the user explicitly asks to include it.
+Start Milestone 10 by following `docs/implement.md`. Reread the active milestone, connect layers and assets panels to the scene model, and preserve the untracked `METHOD.md` unless the user explicitly asks to include it.

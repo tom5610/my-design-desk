@@ -42,3 +42,14 @@ test("selects and nudges a canvas node", async ({ page }) => {
 
   expect(Number(after)).toBe(Number(before) + 1);
 });
+
+test("creates a rectangle node from the canvas tools", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/");
+
+  await page.getByRole("button", { name: "Create Rectangle" }).click();
+  await page.getByTestId("scene-svg").click({ position: { x: 620, y: 360 } });
+
+  await expect(page.locator('[data-node-name="New Rectangle"]')).toBeVisible();
+  await expect(page.getByTestId("selection-outline")).toBeVisible();
+});

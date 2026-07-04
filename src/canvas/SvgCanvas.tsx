@@ -2,7 +2,7 @@ import { Minus, Plus, RotateCcw } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 
 import { createStarterDesign } from "../demo";
-import { defaultViewport, zoomAtPoint, type Viewport } from "../geometry";
+import { defaultViewport, screenToDocument, zoomAtPoint, type Viewport } from "../geometry";
 import type { NodeId } from "../model";
 import { SvgScene } from "../render";
 import { clearSelection, emptySelection, selectOne, toggleSelection, type SelectionState } from "../selection";
@@ -10,6 +10,7 @@ import { commitTransaction, createHistoryState, redo, undo, type HistoryState } 
 import { createTransaction, type DesignOperation, type OperationMetadata } from "../ops";
 import { createMoveTransaction } from "../commands";
 import { SelectionOverlay } from "./overlays";
+import { createNodeOperation, createToolIdFactory, creationTools, type CreationTool } from "../tools";
 
 const canvasSize = {
   width: 1440,
@@ -20,9 +21,11 @@ export function SvgCanvas() {
   const initialDesign = useMemo(() => createStarterDesign(), []);
   const [history, setHistory] = useState<HistoryState>(() => createHistoryState(initialDesign));
   const [selection, setSelection] = useState<SelectionState>(emptySelection);
+  const [activeTool, setActiveTool] = useState<CreationTool | "Select">("Select");
   const [viewport, setViewport] = useState<Viewport>(defaultViewport);
   const clipboardNodeId = useRef<string | null>(null);
   const opCounter = useRef(0);
+  const toolIds = useRef(createToolIdFactory("local-canvas"));
   const design = history.present;
   const viewBoxWidth = canvasSize.width / viewport.zoom;
   const viewBoxHeight = canvasSize.height / viewport.zoom;
@@ -54,7 +57,27 @@ export function SvgCanvas() {
     return target?.getAttribute("data-node-id");
   }
 
+  function documentPointFromEvent(event: React.PointerEvent<SVGSVGElement>) {
+    const bounds = event.currentTarget.getBoundingClientRect();
+    return screenToDocument(
+      {
+        x: ((event.clientX - bounds.left) / bounds.width) * canvasSize.width,
+        y: ((event.clientY - bounds.top) / bounds.height) * canvasSize.height,
+      },
+      viewport,
+    );
+  }
+
   function handlePointerDown(event: React.PointerEvent<SVGSVGElement>) {
+    if (activeTool !== "Select") {
+      const parentId = design.rootIds[0] ?? null;
+      const operation = createNodeOperation(activeTool, documentPointFromEvent(event), parentId, toolIds.current, metadata("create"));
+      commit(createTransaction("tx_create_node", `Create ${activeTool}`, [operation]));
+      setSelection(selectOne(operation.payload.node.id));
+      setActiveTool("Select");
+      return;
+    }
+
     const nodeId = selectedNodeFromEvent(event);
     if (!nodeId) {
       setSelection(clearSelection());
@@ -163,6 +186,25 @@ export function SvgCanvas() {
         <SvgScene design={design} />
         <SelectionOverlay design={design} selectedIds={selection.selectedIds} />
       </svg>
+
+      <div className="absolute right-4 top-16 grid max-h-[calc(100%-120px)] w-44 gap-1 overflow-auto rounded border border-desk-line bg-white/95 p-2 shadow-panel" data-testid="creation-tools">
+        <button
+          className={`rounded px-2 py-1.5 text-left text-xs font-semibold ${activeTool === "Select" ? "bg-desk-ink text-white" : "hover:bg-slate-100"}`}
+          onClick={() => setActiveTool("Select")}
+        >
+          Select
+        </button>
+        {creationTools.map((tool) => (
+          <button
+            aria-label={`Create ${tool}`}
+            className={`rounded px-2 py-1.5 text-left text-xs font-semibold ${activeTool === tool ? "bg-teal-700 text-white" : "hover:bg-slate-100"}`}
+            key={tool}
+            onClick={() => setActiveTool(tool)}
+          >
+            {tool}
+          </button>
+        ))}
+      </div>
 
       <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded border border-desk-line bg-white/95 p-1 shadow-panel">
         <button aria-label="Zoom out" className="flex size-8 items-center justify-center rounded hover:bg-slate-100" onClick={() => zoom(0.85)}>
