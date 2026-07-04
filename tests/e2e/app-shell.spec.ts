@@ -10,6 +10,8 @@ test("loads the professional workspace shell on desktop", async ({ page }) => {
   await expect(page.getByTestId("right-inspector")).toBeVisible();
   await expect(page.getByTestId("canvas-shell")).toBeVisible();
   await expect(page.getByTestId("demo-project-picker")).toBeVisible();
+  await expect(page.getByTestId("scene-svg")).toBeVisible();
+  await expect(page.locator('[data-node-name="Hero headline"]')).toBeVisible();
 });
 
 test("keeps the shell usable on mobile width", async ({ page }) => {
@@ -20,6 +22,7 @@ test("keeps the shell usable on mobile width", async ({ page }) => {
   await expect(page.getByTestId("top-toolbar")).toBeVisible();
   await expect(page.getByTestId("canvas-shell")).toBeVisible();
   await expect(page.getByTestId("mobile-panel-summary")).toBeVisible();
+  await expect(page.getByTestId("scene-svg")).toBeVisible();
 
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
   expect(overflow).toBe(false);

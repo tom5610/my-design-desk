@@ -19,6 +19,7 @@ import {
 import { DemoProjectPicker } from "../ui/DemoProjectPicker";
 import { ModalShell } from "../ui/ModalShell";
 import { ToastStack } from "../ui/ToastStack";
+import { SvgCanvas } from "../canvas";
 
 const layers = [
   { name: "Landing page frame", kind: "Frame", active: true },
@@ -180,41 +181,7 @@ function CanvasShell() {
         <span className="size-2 rounded-full bg-emerald-500" />
         100% · Draft saved locally
       </div>
-
-      <div className="absolute left-1/2 top-1/2 aspect-[86/56] w-[min(860px,calc(100vw-32px))] -translate-x-1/2 -translate-y-1/2 rounded border border-slate-300 bg-white shadow-panel lg:w-[min(860px,calc(100vw-660px))]">
-        <div className="flex h-full flex-col p-5 sm:p-8 lg:p-10">
-          <div className="mb-5 flex items-center justify-between gap-4 sm:mb-8">
-            <div className="text-sm font-semibold">AI Builder Suite</div>
-            <div className="hidden gap-2 text-xs text-desk-muted sm:flex">
-              <span>Dashboard</span>
-              <span>Replay</span>
-              <span>Export</span>
-            </div>
-          </div>
-          <div className="grid flex-1 gap-5 lg:grid-cols-[1.05fr_0.95fr] lg:gap-8">
-            <div className="flex flex-col justify-center">
-              <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-teal-700">Local-first design editor</p>
-              <h2 className="max-w-[14ch] text-[clamp(1.55rem,4vw,3rem)] font-semibold leading-tight text-slate-950">
-                Prototype, replay, and export deterministic design ops.
-              </h2>
-              <div className="mt-5 flex flex-wrap gap-3 sm:mt-7">
-                <button className="rounded bg-desk-ink px-4 py-2 text-sm font-semibold text-white">Start editing</button>
-                <button className="rounded border border-desk-line px-4 py-2 text-sm font-semibold">View replay</button>
-              </div>
-            </div>
-            <div className="hidden content-center gap-4 md:grid">
-              <div className="rounded border border-desk-line bg-slate-50 p-4">
-                <div className="mb-3 h-3 w-36 rounded bg-slate-300" />
-                <div className="h-28 rounded bg-white shadow-sm" />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="h-28 rounded border border-desk-line bg-teal-50" />
-                <div className="h-28 rounded border border-desk-line bg-indigo-50" />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <SvgCanvas />
     </div>
   );
 }

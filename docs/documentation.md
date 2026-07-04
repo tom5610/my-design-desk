@@ -2,9 +2,9 @@
 
 ## Current State
 
-- Current milestone: 7 - SVG Renderer, Pan, Zoom, And Hit Testing
-- Previous milestone: 6 - App Shell And Professional Workspace UI
-- Status: ready for SVG renderer after verified workspace shell
+- Current milestone: 8 - Selection, Handles, Transforms, And Keyboard Basics
+- Previous milestone: 7 - SVG Renderer, Pan, Zoom, And Hit Testing
+- Status: ready for selection and transform controls after verified SVG renderer
 - Source spec: `docs/prompt.md`
 - Milestone contract: `docs/plans.md`
 - Runbook: `docs/implement.md`
@@ -194,16 +194,48 @@ Notes:
 - The shell is responsive at the tested 1440x900 and 390x844 viewports.
 - Playwright local server/browser checks may require elevated permissions in this environment.
 
+### 7. SVG Renderer, Pan, Zoom, And Hit Testing
+
+Status: complete
+
+Scope completed:
+
+- Added viewport coordinate conversion, zoom clamping, and zoom-at-point helpers.
+- Added hit-testing for topmost visible unlocked nodes with reverse z-order traversal.
+- Added SVG scene renderer with stable `data-node-*` selectors.
+- Added SVG canvas shell rendering the deterministic starter design.
+- Added zoom controls and stable canvas test IDs.
+- Replaced the static canvas mock with model-driven SVG rendering.
+- Added geometry tests, hit-testing tests, and renderer snapshot coverage.
+- Extended Playwright smoke tests to assert SVG canvas and starter nodes render on desktop and mobile widths.
+- Preserved existing untracked `METHOD.md`; it remained outside the Milestone 7 commit scope.
+
+Verification:
+
+- `npm run lint` passed.
+- `npm run typecheck` passed.
+- `npm test` initially failed on exact floating-point equality in a viewport round-trip test. Switched that assertion to `toBeCloseTo`.
+- `npm test` passed: 6 test files, 17 tests. One renderer snapshot was written.
+- `npm run build` passed with Vite `8.1.3`.
+- `npm run test:e2e` passed: 2 Playwright tests covering desktop and mobile canvas load.
+- `npm run lint` passed after the viewport test fix.
+- `npm run typecheck` passed after the viewport test fix.
+
+Notes:
+
+- Hit-testing is currently axis-aligned for rotated geometry; rotation-sensitive transforms start in later milestones.
+- Image nodes render as local SVG placeholders until tracked visual assets are introduced.
+
 ## Next Milestone
 
-### 7. SVG Renderer, Pan, Zoom, And Hit Testing
+### 8. Selection, Handles, Transforms, And Keyboard Basics
 
 Planned scope:
 
-- Render the scene graph to SVG.
-- Implement viewport pan/zoom and coordinate conversion.
-- Implement topmost visible unlocked node hit-testing.
-- Add stable canvas test selectors.
+- Implement deterministic selection state.
+- Add selection outlines, resize handles, and rotation handle overlays.
+- Add drag, nudge, delete, copy/paste, duplicate, undo/redo keyboard basics.
+- Ensure transforms emit operations.
 
 Planned verification:
 
@@ -211,14 +243,14 @@ Planned verification:
 - `npm run typecheck`
 - `npm test`
 - `npm run build`
-- Geometry tests.
-- Renderer snapshot tests.
-- Playwright canvas smoke.
+- Selection tests.
+- Transform tests.
+- Playwright interaction smoke.
 
 Known risks:
 
-- Renderer should consume the scene model without putting renderer state into the model.
-- Hit testing must respect z-order, visibility, and locked nodes.
+- Selection and transform state must not bypass the operations engine.
+- Keyboard shortcuts can conflict with browser defaults if not scoped carefully.
 - Existing untracked `METHOD.md` remains outside milestone scope and will not be staged.
 
 ## Decisions Log
@@ -239,6 +271,7 @@ Known risks:
 | 2026-07-04 | Store undo as inverse transactions computed before applying the original transaction. | This makes compound user actions undo as one step while preserving deterministic operation replay. |
 | 2026-07-04 | Keep presence ephemeral and persist only canonical sequenced operations. | Presence should not pollute replay, export, or version history state. |
 | 2026-07-04 | Keep shell UI behavior shallow in Milestone 6. | Interaction-heavy canvas behavior starts in the SVG renderer and selection milestones. |
+| 2026-07-04 | Keep Milestone 7 hit-testing axis-aligned. | Rotation-aware transform math belongs with the transform milestone rather than the first renderer slice. |
 
 ## Blockers
 
@@ -246,4 +279,4 @@ None.
 
 ## Handoff
 
-Start Milestone 7 by following `docs/implement.md`. Reread the active milestone, render the starter design from the scene model to SVG, and preserve the untracked `METHOD.md` unless the user explicitly asks to include it.
+Start Milestone 8 by following `docs/implement.md`. Reread the active milestone, keep selection and transform changes operation-driven, and preserve the untracked `METHOD.md` unless the user explicitly asks to include it.
