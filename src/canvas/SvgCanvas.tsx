@@ -7,9 +7,11 @@ import { SvgScene } from "../render";
 import { clearSelection, selectOne, toggleSelection, type SelectionState } from "../selection";
 import { commitTransaction, redo, undo, type HistoryState } from "../store";
 import { createTransaction, type DesignOperation, type OperationMetadata } from "../ops";
-import { createMoveTransaction } from "../commands";
+import { createGroupTransaction, createLockTransaction, createMoveTransaction, createOrderingTransaction } from "../commands";
 import { SelectionOverlay } from "./overlays";
 import { createNodeOperation, createToolIdFactory, creationTools, type CreationTool } from "../tools";
+import { CanvasContextMenu, type ContextMenuAction } from "../ui/contextMenu";
+import { ShortcutHelp } from "../ui/shortcuts";
 
 const canvasSize = {
   width: 1440,
@@ -28,6 +30,8 @@ export function SvgCanvas({
   setSelection: React.Dispatch<React.SetStateAction<SelectionState>>;
 }) {
   const [activeTool, setActiveTool] = useState<CreationTool | "Select">("Select");
+  const [contextMenuPosition, setContextMenuPosition] = useState<{ x: number; y: number } | null>(null);
+  const [shortcutHelpOpen, setShortcutHelpOpen] = useState(false);
   const [viewport, setViewport] = useState<Viewport>(defaultViewport);
   const clipboardNodeId = useRef<string | null>(null);
   const opCounter = useRef(0);
@@ -175,6 +179,37 @@ export function SvgCanvas({
     } else if (modifier && event.key.toLowerCase() === "v" && clipboardNodeId.current) {
       event.preventDefault();
       duplicateSelection();
+    } else if (event.key === "?") {
+      event.preventDefault();
+      setShortcutHelpOpen(true);
+    }
+  }
+
+  function handleContextMenu(event: React.MouseEvent<SVGSVGElement>) {
+    event.preventDefault();
+    const nodeId = selectedNodeFromEvent(event as unknown as React.PointerEvent<SVGSVGElement>);
+    if (nodeId) {
+      setSelection(selectOne(nodeId as NodeId));
+    }
+    setContextMenuPosition({ x: event.clientX, y: event.clientY });
+  }
+
+  function runContextAction(action: ContextMenuAction) {
+    const activeId = selection.activeId;
+    if (!activeId) return;
+
+    if (action === "bring-forward") commit(createOrderingTransaction(design, activeId, "forward", metadata("order")));
+    if (action === "send-backward") commit(createOrderingTransaction(design, activeId, "backward", metadata("order")));
+    if (action === "bring-front") commit(createOrderingTransaction(design, activeId, "front", metadata("order")));
+    if (action === "send-back") commit(createOrderingTransaction(design, activeId, "back", metadata("order")));
+    if (action === "lock") {
+      const node = design.nodes[activeId];
+      if (node) commit(createLockTransaction(activeId, true, metadata("lock")));
+    }
+    if (action === "group") {
+      const groupId = `group_${opCounter.current + 1}` as NodeId;
+      commit(createGroupTransaction(design, selection.selectedIds, groupId, (index) => metadata("group", index)));
+      setSelection(selectOne(groupId));
     }
   }
 
@@ -187,6 +222,7 @@ export function SvgCanvas({
         preserveAspectRatio="xMidYMid meet"
         role="img"
         onPointerDown={handlePointerDown}
+        onContextMenu={handleContextMenu}
         viewBox={`${viewport.x} ${viewport.y} ${viewBoxWidth} ${viewBoxHeight}`}
       >
         <SvgScene design={design} />
@@ -224,6 +260,8 @@ export function SvgCanvas({
           <RotateCcw size={15} aria-hidden="true" />
         </button>
       </div>
+      <CanvasContextMenu onAction={runContextAction} onClose={() => setContextMenuPosition(null)} position={contextMenuPosition} />
+      <ShortcutHelp onClose={() => setShortcutHelpOpen(false)} open={shortcutHelpOpen} />
     </div>
   );
 }

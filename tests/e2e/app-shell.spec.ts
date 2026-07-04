@@ -73,3 +73,16 @@ test("edits geometry through the inspector", async ({ page }) => {
 
   await expect(page.getByTestId("selection-outline")).toHaveAttribute("x", "210");
 });
+
+test("opens context menu and shortcut help", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/");
+
+  await page.locator('[data-node-name="Hero headline"]').click({ button: "right" });
+  await expect(page.getByTestId("context-menu")).toBeVisible();
+  await page.getByText("Bring forward").click();
+
+  await page.getByTestId("svg-canvas").focus();
+  await page.keyboard.press("?");
+  await expect(page.getByTestId("shortcut-help")).toBeVisible();
+});

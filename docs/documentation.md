@@ -2,9 +2,9 @@
 
 ## Current State
 
-- Current milestone: 12 - Grouping, Locking, Ordering, Context Menu, Shortcuts
-- Previous milestone: 11 - Properties Inspector And Constraints
-- Status: ready for grouping and ordering commands after verified inspector
+- Current milestone: 13 - Components, Instances, Overrides, Detach
+- Previous milestone: 12 - Grouping, Locking, Ordering, Context Menu, Shortcuts
+- Status: ready for component system after verified grouping and ordering commands
 - Source spec: `docs/prompt.md`
 - Milestone contract: `docs/plans.md`
 - Runbook: `docs/implement.md`
@@ -344,15 +344,49 @@ Notes:
 - Inspector fill support currently writes solid fills; richer gradient UI can build on the same style operation path.
 - Constraint helpers are deterministic and React-independent.
 
+### 12. Grouping, Locking, Ordering, Context Menu, Shortcuts
+
+Status: complete
+
+Scope completed:
+
+- Added ordering commands for bring forward/backward and send front/back.
+- Added lock command using `node.updateMeta`.
+- Added grouping command that creates a Group and reparents same-parent selected nodes while preserving parent relationships.
+- Added canvas context menu for ordering, lock, and group actions.
+- Added keyboard shortcut help overlay.
+- Added command tests for ordering, locking, and grouping parent-child integrity.
+- Added Playwright context menu and shortcut help smoke.
+- Preserved existing untracked `METHOD.md`; it remained outside the Milestone 12 commit scope.
+
+Verification:
+
+- `npm run lint` passed.
+- `npm run typecheck` passed.
+- `npm test` passed: 13 test files, 33 tests.
+- `npm run build` passed with Vite `8.1.3`.
+- `npm run test:e2e` initially failed because shortcut help is scoped to the focused canvas. Focused the canvas before pressing `?`.
+- `npm run test:e2e` passed after the fix: 7 Playwright tests including context menu and shortcut help smoke.
+- `npm run lint` passed after the e2e fix.
+- `npm run typecheck` passed after the e2e fix.
+- `npm test` passed after the e2e fix: 13 test files, 33 tests.
+- `npm run build` passed after the e2e fix.
+
+Notes:
+
+- Ungroup UI is not yet exposed; grouping command infrastructure is in place and can be extended with ungroup in later command polish.
+- Shortcut help reflects the keyboard shortcuts currently implemented in the shell.
+
 ## Next Milestone
 
-### 12. Grouping, Locking, Ordering, Context Menu, Shortcuts
+### 13. Components, Instances, Overrides, Detach
 
 Planned scope:
 
-- Add group/ungroup, bring forward/back, send front/back, lock/unlock, context menu, and keyboard shortcut modal.
-- Preserve z-order and parent relationships through commands.
-- Keep shortcut help aligned with implemented shortcuts.
+- Create components from selection.
+- Insert component instances.
+- Support inherited component rendering with text/fill overrides.
+- Add go-to-main-component and detach instance command paths.
 
 Planned verification:
 
@@ -360,13 +394,14 @@ Planned verification:
 - `npm run typecheck`
 - `npm test`
 - `npm run build`
-- Command tests.
-- Playwright context menu smoke.
+- Component inheritance tests.
+- Serialization tests.
+- Playwright component smoke.
 
 Known risks:
 
-- Grouping and ordering commands can corrupt parent/child arrays if not tested against z-order.
-- Context menu UI should not bypass the command layer.
+- Component instance rendering can duplicate renderer logic if not built over scene model primitives.
+- Overrides must remain deterministic and serializable.
 - Existing untracked `METHOD.md` remains outside milestone scope and will not be staged.
 
 ## Decisions Log
@@ -392,6 +427,7 @@ Known risks:
 | 2026-07-04 | Add creation tools as deterministic `node.create` operations. | Creation, selection, replay, and serialization should all share the same operation path. |
 | 2026-07-04 | Lift workspace scene state above canvas and panels. | Layers, canvas rendering, selection, and future inspector controls must operate on one shared scene model. |
 | 2026-07-04 | Route inspector edits through existing operation families. | Inspector UI should be another command surface over the deterministic scene model. |
+| 2026-07-04 | Keep context menu actions on command helpers. | Context UI must not mutate scene state outside the operation path. |
 
 ## Blockers
 
@@ -399,4 +435,4 @@ None.
 
 ## Handoff
 
-Start Milestone 12 by following `docs/implement.md`. Reread the active milestone, preserve parent/child ordering through commands, and preserve the untracked `METHOD.md` unless the user explicitly asks to include it.
+Start Milestone 13 by following `docs/implement.md`. Reread the active milestone, build component instances over the scene model, and preserve the untracked `METHOD.md` unless the user explicitly asks to include it.
