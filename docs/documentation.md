@@ -2,9 +2,9 @@
 
 ## Current State
 
-- Current milestone: 6 - App Shell And Professional Workspace UI
-- Previous milestone: 5 - Local Server, Session Store, And WebSocket Protocol
-- Status: ready for workspace shell after verified local server and protocol
+- Current milestone: 7 - SVG Renderer, Pan, Zoom, And Hit Testing
+- Previous milestone: 6 - App Shell And Professional Workspace UI
+- Status: ready for SVG renderer after verified workspace shell
 - Source spec: `docs/prompt.md`
 - Milestone contract: `docs/plans.md`
 - Runbook: `docs/implement.md`
@@ -160,15 +160,50 @@ Notes:
 - Runtime session files are under gitignored `data/`.
 - WebSocket tests may require elevated localhost permissions in this environment.
 
+### 6. App Shell And Professional Workspace UI
+
+Status: complete
+
+Scope completed:
+
+- Refactored the one-file shell into `src/app`, `src/layout`, and `src/ui` modules.
+- Added a responsive professional workspace with top toolbar, left layers/assets panel, canvas center, right inspector, bottom/status areas, mobile panel controls, and stable test IDs.
+- Added demo project picker shell.
+- Added toast stack and modal foundation shells.
+- Removed the global minimum body width so mobile-width layouts can render without horizontal overflow.
+- Added `npm run test:e2e` and Playwright shell smoke coverage for desktop and mobile widths.
+- Configured Playwright to use the local Chrome channel.
+- Kept editor behavior implementation out of scope for later milestones.
+- Preserved existing untracked `METHOD.md`; it remained outside the Milestone 6 commit scope.
+
+Verification:
+
+- `npm run lint` passed.
+- `npm run typecheck` passed.
+- `npm test` initially failed because Vitest collected the Playwright spec and the scaffold script assertion did not include `test:e2e`. Excluded `tests/e2e/**` from Vitest and updated the script assertion.
+- `npm test` passed: 4 test files, 12 tests.
+- `npm run build` passed with Vite `8.1.3`.
+- `npm run test:e2e` failed in the sandbox because Playwright could not start the local web server.
+- Reran approved elevated `npm run test:e2e`; it passed: 2 Playwright tests across desktop and mobile-width shell checks.
+- `npm run lint` passed after e2e fixes.
+- `npm run typecheck` passed after e2e fixes.
+- `npm run build` passed after e2e fixes.
+
+Notes:
+
+- The shell is responsive at the tested 1440x900 and 390x844 viewports.
+- Playwright local server/browser checks may require elevated permissions in this environment.
+
 ## Next Milestone
 
-### 6. App Shell And Professional Workspace UI
+### 7. SVG Renderer, Pan, Zoom, And Hit Testing
 
 Planned scope:
 
-- Build top bar, left panel, canvas center, right inspector, bottom/status areas, toasts, modal foundations, and demo project picker shell.
-- Move the current one-file shell toward `src/app/*`, `src/ui/*`, and `src/layout/*`.
-- Keep the UI professional, dense, responsive, and stable at desktop and mobile widths.
+- Render the scene graph to SVG.
+- Implement viewport pan/zoom and coordinate conversion.
+- Implement topmost visible unlocked node hit-testing.
+- Add stable canvas test selectors.
 
 Planned verification:
 
@@ -176,12 +211,14 @@ Planned verification:
 - `npm run typecheck`
 - `npm test`
 - `npm run build`
-- Playwright load smoke.
+- Geometry tests.
+- Renderer snapshot tests.
+- Playwright canvas smoke.
 
 Known risks:
 
-- Layout work can drift into later editor behavior; Milestone 6 should stay focused on shell structure and stable controls.
-- Responsive shell checks may require browser automation and screenshots.
+- Renderer should consume the scene model without putting renderer state into the model.
+- Hit testing must respect z-order, visibility, and locked nodes.
 - Existing untracked `METHOD.md` remains outside milestone scope and will not be staged.
 
 ## Decisions Log
@@ -201,6 +238,7 @@ Known risks:
 | 2026-07-04 | Normalize canonical serialized numbers to 4 decimal places. | It keeps snapshot bytes stable while retaining sufficient precision for early geometry and style data. |
 | 2026-07-04 | Store undo as inverse transactions computed before applying the original transaction. | This makes compound user actions undo as one step while preserving deterministic operation replay. |
 | 2026-07-04 | Keep presence ephemeral and persist only canonical sequenced operations. | Presence should not pollute replay, export, or version history state. |
+| 2026-07-04 | Keep shell UI behavior shallow in Milestone 6. | Interaction-heavy canvas behavior starts in the SVG renderer and selection milestones. |
 
 ## Blockers
 
@@ -208,4 +246,4 @@ None.
 
 ## Handoff
 
-Start Milestone 6 by following `docs/implement.md`. Reread the active milestone, keep UI work scoped to the workspace shell, and preserve the untracked `METHOD.md` unless the user explicitly asks to include it.
+Start Milestone 7 by following `docs/implement.md`. Reread the active milestone, render the starter design from the scene model to SVG, and preserve the untracked `METHOD.md` unless the user explicitly asks to include it.

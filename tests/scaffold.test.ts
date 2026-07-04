@@ -10,6 +10,7 @@ describe("Milestone 2 scaffold", () => {
       "export",
       "lint",
       "test",
+      "test:e2e",
       "typecheck",
     ]);
   });

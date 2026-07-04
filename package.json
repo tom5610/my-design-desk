@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "concurrently -k -n web,server -c cyan,green \"vite --host 127.0.0.1\" \"tsx watch server/index.ts\"",
     "build": "tsc -b && vite build",
-    "test": "vitest run",
+    "test": "vitest run --exclude tests/e2e/**",
+    "test:e2e": "playwright test",
     "lint": "eslint .",
     "typecheck": "tsc -b --pretty false",
     "export": "tsx scripts/export.ts"
