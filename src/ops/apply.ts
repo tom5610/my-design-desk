@@ -9,6 +9,7 @@ import type {
   NodeReparentOperation,
   NodeRestoreOperation,
   NodeUpdateGeometryOperation,
+  NodeUpdateConstraintsOperation,
   NodeUpdateMetaOperation,
   NodeUpdateStyleOperation,
   Transaction,
@@ -149,6 +150,22 @@ function updateMeta(design: DesignFile, operation: NodeUpdateMetaOperation): Des
       name: operation.payload.name ?? node.name,
       locked: operation.payload.locked ?? node.locked,
       visible: operation.payload.visible ?? node.visible,
+    },
+    operation.timestamp,
+  );
+}
+
+function updateConstraints(design: DesignFile, operation: NodeUpdateConstraintsOperation): DesignFile {
+  const node = design.nodes[operation.payload.nodeId];
+  if (!node || !("constraints" in node)) {
+    throw new Error(`Cannot update constraints for missing node ${operation.payload.nodeId}`);
+  }
+
+  return replaceNode(
+    design,
+    {
+      ...node,
+      constraints: operation.payload.constraints,
     },
     operation.timestamp,
   );
@@ -299,6 +316,8 @@ export function applyOperation(design: DesignFile, operation: DesignOperation): 
       return updateStyle(design, operation);
     case "node.updateMeta":
       return updateMeta(design, operation);
+    case "node.updateConstraints":
+      return updateConstraints(design, operation);
     case "node.reparent":
       return reparentNode(design, operation);
     case "node.reorder":

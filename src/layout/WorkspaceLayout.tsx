@@ -1,10 +1,8 @@
 import {
   Circle,
   Component,
-  Download,
   Eye,
   Layers,
-  MessageSquare,
   MousePointer2,
   Play,
   Share2,
@@ -24,18 +22,10 @@ import { createStarterDesign } from "../demo";
 import type { NodeId } from "../model";
 import { createLayerMetaTransaction, createReorderTransaction, LayersPanel } from "../panels/layers";
 import { AssetsPanel } from "../panels/assets";
+import { InspectorPanel } from "../panels/inspector";
 import { selectOne, type SelectionState, emptySelection } from "../selection";
 import { commitTransaction, createHistoryState, type HistoryState } from "../store";
-import type { OperationMetadata } from "../ops";
-
-const properties = [
-  ["X", "128"],
-  ["Y", "96"],
-  ["W", "960"],
-  ["H", "620"],
-  ["Rotate", "0"],
-  ["Radius", "16"],
-];
+import { createTransaction, type OperationMetadata } from "../ops";
 
 const tools = [
   { label: "Select", icon: MousePointer2, active: true },
@@ -102,7 +92,19 @@ export function WorkspaceLayout() {
         </footer>
       </section>
 
-      <InspectorPanel />
+      <InspectorPanel
+        design={design}
+        onUpdateConstraints={(nodeId, constraints) =>
+          commit(createTransaction("tx_update_constraints", "Update constraints", [{ ...metadata("constraints"), kind: "node.updateConstraints", payload: { nodeId, constraints } }]))
+        }
+        onUpdateGeometry={(nodeId, geometry) =>
+          commit(createTransaction("tx_update_geometry", "Update geometry", [{ ...metadata("geometry"), kind: "node.updateGeometry", payload: { nodeId, geometry } }]))
+        }
+        onUpdateStyle={(nodeId, style) =>
+          commit(createTransaction("tx_update_style", "Update style", [{ ...metadata("style"), kind: "node.updateStyle", payload: { nodeId, style } }]))
+        }
+        selectedId={selection.activeId}
+      />
       <ToastStack />
       <ModalShell />
     </main>
@@ -245,67 +247,6 @@ function CanvasShell({
       </div>
       <SvgCanvas history={history} selection={selection} setHistory={setHistory} setSelection={setSelection} />
     </div>
-  );
-}
-
-function InspectorPanel() {
-  return (
-    <aside className="hidden w-[320px] shrink-0 flex-col border-l border-desk-line bg-white xl:flex" data-testid="right-inspector">
-      <div className="flex h-14 items-center justify-between border-b border-desk-line px-4">
-        <div>
-          <h2 className="text-sm font-semibold">Inspector</h2>
-          <p className="text-xs text-desk-muted">Landing page frame</p>
-        </div>
-        <SlidersHorizontal size={18} aria-hidden="true" />
-      </div>
-
-      <div className="space-y-5 overflow-auto p-4">
-        <section>
-          <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-desk-muted">Geometry</h3>
-          <div className="grid grid-cols-2 gap-2">
-            {properties.map(([label, value]) => (
-              <label className="rounded border border-desk-line px-3 py-2" key={label}>
-                <span className="block text-[11px] font-medium text-desk-muted">{label}</span>
-                <input className="mt-1 w-full bg-transparent text-sm font-medium outline-none" value={value} readOnly />
-              </label>
-            ))}
-          </div>
-        </section>
-
-        <section>
-          <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-desk-muted">Appearance</h3>
-          <div className="space-y-2">
-            <button className="flex w-full items-center justify-between rounded border border-desk-line px-3 py-2 text-sm">
-              Fill
-              <span className="size-5 rounded bg-teal-600" />
-            </button>
-            <button className="flex w-full items-center justify-between rounded border border-desk-line px-3 py-2 text-sm">
-              Stroke
-              <span className="size-5 rounded border border-slate-400" />
-            </button>
-          </div>
-        </section>
-
-        <section>
-          <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-desk-muted">Panels</h3>
-          <div className="grid grid-cols-3 gap-2">
-            {[
-              { label: "Comments", icon: MessageSquare },
-              { label: "Replay", icon: Play },
-              { label: "Export", icon: Download },
-            ].map((item) => {
-              const Icon = item.icon;
-              return (
-                <button className="flex flex-col items-center gap-2 rounded border border-desk-line px-2 py-3 text-xs" key={item.label}>
-                  <Icon size={16} aria-hidden="true" />
-                  {item.label}
-                </button>
-              );
-            })}
-          </div>
-        </section>
-      </div>
-    </aside>
   );
 }
 

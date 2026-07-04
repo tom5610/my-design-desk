@@ -2,9 +2,9 @@
 
 ## Current State
 
-- Current milestone: 11 - Properties Inspector And Constraints
-- Previous milestone: 10 - Layers Tree, Assets, Search, And Reorder
-- Status: ready for properties inspector after verified layers and assets panels
+- Current milestone: 12 - Grouping, Locking, Ordering, Context Menu, Shortcuts
+- Previous milestone: 11 - Properties Inspector And Constraints
+- Status: ready for grouping and ordering commands after verified inspector
 - Source spec: `docs/prompt.md`
 - Milestone contract: `docs/plans.md`
 - Runbook: `docs/implement.md`
@@ -316,15 +316,43 @@ Notes:
 - Layer rename operation support exists in `node.updateMeta`; editable rename UI can be deepened with the inspector/command work.
 - Drag/drop currently routes through the same reorder helper as the move-up control.
 
+### 11. Properties Inspector And Constraints
+
+Status: complete
+
+Scope completed:
+
+- Replaced the static inspector with a selected-node inspector backed by the shared scene model.
+- Added inspector controls for geometry, fill, opacity, and constraints.
+- Routed inspector edits through `node.updateGeometry`, `node.updateStyle`, and `node.updateConstraints` operations.
+- Added `node.updateConstraints` operation support with inversion.
+- Added deterministic constraint math for right, left-right, center, and scale behaviors.
+- Added inspector and constraints unit tests.
+- Added Playwright inspector smoke for editing selected node geometry.
+- Preserved existing untracked `METHOD.md`; it remained outside the Milestone 11 commit scope.
+
+Verification:
+
+- `npm run lint` passed.
+- `npm run typecheck` passed.
+- `npm test` passed: 12 test files, 30 tests.
+- `npm run build` passed with Vite `8.1.3`.
+- `npm run test:e2e` passed: 6 Playwright tests including inspector geometry edit smoke.
+
+Notes:
+
+- Inspector fill support currently writes solid fills; richer gradient UI can build on the same style operation path.
+- Constraint helpers are deterministic and React-independent.
+
 ## Next Milestone
 
-### 11. Properties Inspector And Constraints
+### 12. Grouping, Locking, Ordering, Context Menu, Shortcuts
 
 Planned scope:
 
-- Add inspector controls for geometry, rotation, fill, gradient, stroke, radius, opacity, shadows, text style, and frame constraints.
-- Ensure inspector edits selected nodes through operations.
-- Add deterministic frame constraint helpers.
+- Add group/ungroup, bring forward/back, send front/back, lock/unlock, context menu, and keyboard shortcut modal.
+- Preserve z-order and parent relationships through commands.
+- Keep shortcut help aligned with implemented shortcuts.
 
 Planned verification:
 
@@ -332,14 +360,13 @@ Planned verification:
 - `npm run typecheck`
 - `npm test`
 - `npm run build`
-- Inspector unit tests.
-- Constraints tests.
-- Playwright inspector smoke.
+- Command tests.
+- Playwright context menu smoke.
 
 Known risks:
 
-- Inspector updates can become direct state mutation if not routed through operations.
-- Constraint math must remain deterministic and independent from React.
+- Grouping and ordering commands can corrupt parent/child arrays if not tested against z-order.
+- Context menu UI should not bypass the command layer.
 - Existing untracked `METHOD.md` remains outside milestone scope and will not be staged.
 
 ## Decisions Log
@@ -364,6 +391,7 @@ Known risks:
 | 2026-07-04 | Route keyboard transforms through operations and history. | Selection UI must not become a parallel state mutation path. |
 | 2026-07-04 | Add creation tools as deterministic `node.create` operations. | Creation, selection, replay, and serialization should all share the same operation path. |
 | 2026-07-04 | Lift workspace scene state above canvas and panels. | Layers, canvas rendering, selection, and future inspector controls must operate on one shared scene model. |
+| 2026-07-04 | Route inspector edits through existing operation families. | Inspector UI should be another command surface over the deterministic scene model. |
 
 ## Blockers
 
@@ -371,4 +399,4 @@ None.
 
 ## Handoff
 
-Start Milestone 11 by following `docs/implement.md`. Reread the active milestone, route inspector edits through operations, and preserve the untracked `METHOD.md` unless the user explicitly asks to include it.
+Start Milestone 12 by following `docs/implement.md`. Reread the active milestone, preserve parent/child ordering through commands, and preserve the untracked `METHOD.md` unless the user explicitly asks to include it.

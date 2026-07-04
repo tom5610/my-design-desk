@@ -63,3 +63,13 @@ test("filters layers and toggles node visibility", async ({ page }) => {
   await page.getByLabel("Toggle visibility Hero headline").click();
   await expect(page.locator('[data-node-name="Hero headline"]')).toHaveCount(0);
 });
+
+test("edits geometry through the inspector", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/");
+
+  await page.locator('[data-node-name="Hero headline"]').click();
+  await page.getByLabel("Inspector X").fill("210");
+
+  await expect(page.getByTestId("selection-outline")).toHaveAttribute("x", "210");
+});

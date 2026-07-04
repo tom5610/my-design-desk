@@ -129,6 +129,20 @@ export function invertOperation(designBefore: DesignFile, operation: DesignOpera
         },
       };
     }
+    case "node.updateConstraints": {
+      const node = designBefore.nodes[operation.payload.nodeId];
+      if (!node) {
+        throw new Error(`Cannot invert constraints update for missing node ${operation.payload.nodeId}`);
+      }
+      return {
+        ...inverseMetadata(operation, designBefore.updatedAt),
+        kind: "node.updateConstraints",
+        payload: {
+          nodeId: node.id,
+          constraints: node.constraints,
+        },
+      };
+    }
     case "node.reparent": {
       const node = designBefore.nodes[operation.payload.nodeId];
       if (!node) {

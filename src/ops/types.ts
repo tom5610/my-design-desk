@@ -1,5 +1,5 @@
 import type { NodeId } from "../model/ids";
-import type { Geometry, SceneNode } from "../model/scene";
+import type { Constraints, Geometry, SceneNode } from "../model/scene";
 import type { NodeStyle } from "../model/styles";
 
 export type OperationMetadata = {
@@ -45,6 +45,14 @@ export type NodeUpdateMetaOperation = OperationMetadata & {
   };
 };
 
+export type NodeUpdateConstraintsOperation = OperationMetadata & {
+  kind: "node.updateConstraints";
+  payload: {
+    nodeId: NodeId;
+    constraints: Constraints;
+  };
+};
+
 export type NodeReparentOperation = OperationMetadata & {
   kind: "node.reparent";
   payload: {
@@ -83,6 +91,7 @@ export type DesignOperation =
   | NodeUpdateGeometryOperation
   | NodeUpdateStyleOperation
   | NodeUpdateMetaOperation
+  | NodeUpdateConstraintsOperation
   | NodeReparentOperation
   | NodeReorderOperation
   | NodeDeleteOperation
