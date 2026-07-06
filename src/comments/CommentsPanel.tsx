@@ -1,4 +1,4 @@
-import { CheckCircle2, LocateFixed, MessageSquare, RotateCcw, Send } from "lucide-react";
+import { CheckCircle2, LocateFixed, MessageSquare, RotateCcw, Send, X } from "lucide-react";
 import { useState } from "react";
 
 import type { CommentId, CommentThread } from "../model";
@@ -8,6 +8,7 @@ export function CommentsPanel({
   author,
   comments,
   onAuthorChange,
+  onClose,
   onJumpToComment,
   onReply,
   onResolve,
@@ -16,6 +17,7 @@ export function CommentsPanel({
   author: string;
   comments: readonly CommentThread[];
   onAuthorChange: (author: string) => void;
+  onClose: () => void;
   onJumpToComment: (commentId: CommentId) => void;
   onReply: (commentId: CommentId, body: string) => void;
   onResolve: (commentId: CommentId, resolved: boolean) => void;
@@ -23,10 +25,15 @@ export function CommentsPanel({
   const [drafts, setDrafts] = useState<Record<string, string>>({});
 
   return (
-    <aside className="absolute right-4 top-4 z-10 w-[320px] rounded border border-desk-line bg-white/95 shadow-panel" data-testid="comments-panel">
-      <div className="flex items-center gap-2 border-b border-desk-line px-3 py-2">
-        <MessageSquare size={15} aria-hidden="true" />
-        <h2 className="text-sm font-semibold">Comments</h2>
+    <aside className="absolute left-4 right-4 top-20 z-20 rounded border border-desk-line bg-white/95 shadow-panel sm:left-auto sm:right-4 sm:top-4 sm:w-[320px]" data-testid="comments-panel">
+      <div className="flex items-center justify-between gap-2 border-b border-desk-line px-3 py-2">
+        <div className="flex items-center gap-2">
+          <MessageSquare size={15} aria-hidden="true" />
+          <h2 className="text-sm font-semibold">Comments</h2>
+        </div>
+        <button aria-label="Close comments" className="flex size-7 items-center justify-center rounded hover:bg-slate-100" onClick={onClose} type="button">
+          <X size={14} aria-hidden="true" />
+        </button>
       </div>
       <div className="border-b border-desk-line p-3">
         <label className="block text-[11px] font-semibold uppercase tracking-wide text-desk-muted">

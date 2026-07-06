@@ -1,14 +1,16 @@
-import { History, RotateCcw, Save } from "lucide-react";
+import { History, RotateCcw, Save, X } from "lucide-react";
 import { useState } from "react";
 
 import type { DesignFile, SnapshotId } from "../model";
 
 export function VersionHistoryPanel({
   design,
+  onClose,
   onCreateSnapshot,
   onRestoreSnapshot,
 }: {
   design: DesignFile;
+  onClose: () => void;
   onCreateSnapshot: (name: string) => void;
   onRestoreSnapshot: (snapshotId: SnapshotId) => void;
 }) {
@@ -16,10 +18,15 @@ export function VersionHistoryPanel({
   const snapshots = Object.values(design.snapshots).sort((left, right) => right.createdAt.localeCompare(left.createdAt));
 
   return (
-    <aside className="absolute bottom-16 right-4 z-10 w-[320px] rounded border border-desk-line bg-white/95 shadow-panel" data-testid="version-history-panel">
-      <div className="flex items-center gap-2 border-b border-desk-line px-3 py-2">
-        <History size={15} aria-hidden="true" />
-        <h2 className="text-sm font-semibold">Version history</h2>
+    <aside className="absolute left-4 right-4 top-20 z-20 rounded border border-desk-line bg-white/95 shadow-panel sm:bottom-16 sm:left-auto sm:right-4 sm:top-auto sm:w-[320px]" data-testid="version-history-panel">
+      <div className="flex items-center justify-between gap-2 border-b border-desk-line px-3 py-2">
+        <div className="flex items-center gap-2">
+          <History size={15} aria-hidden="true" />
+          <h2 className="text-sm font-semibold">Version history</h2>
+        </div>
+        <button aria-label="Close version history" className="flex size-7 items-center justify-center rounded hover:bg-slate-100" onClick={onClose} type="button">
+          <X size={14} aria-hidden="true" />
+        </button>
       </div>
       <form
         className="flex gap-2 border-b border-desk-line p-3"

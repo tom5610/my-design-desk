@@ -9,7 +9,7 @@ import { commitTransaction, redo, undo, type HistoryState } from "../store";
 import { createTransaction, type DesignOperation, type OperationMetadata } from "../ops";
 import { createGroupTransaction, createLockTransaction, createMoveTransaction, createOrderingTransaction } from "../commands";
 import { GuideOverlay, PresenceOverlay, SelectionOverlay } from "./overlays";
-import { createNodeOperation, createToolIdFactory, creationTools, type CreationTool } from "../tools";
+import { createNodeOperation, createToolIdFactory, type CreationTool } from "../tools";
 import { CanvasContextMenu, type ContextMenuAction } from "../ui/contextMenu";
 import { ShortcutHelp } from "../ui/shortcuts";
 import { CommentPinsOverlay } from "../comments";
@@ -34,7 +34,9 @@ export function SvgCanvas({
   commentMode,
   comments,
   history,
+  activeTool,
   onBroadcastOperations,
+  onActiveToolChange,
   onCreateComment,
   onCursorMove,
   onSelectComment,
@@ -48,7 +50,9 @@ export function SvgCanvas({
   commentMode: boolean;
   comments: readonly CommentThread[];
   history: HistoryState;
+  activeTool: CreationTool | "Select";
   onBroadcastOperations: (operations: readonly DesignOperation[]) => void;
+  onActiveToolChange: (tool: CreationTool | "Select") => void;
   onCreateComment: (point: Point, nodeId: NodeId) => void;
   onCursorMove: (point: Point) => void;
   onSelectComment: (commentId: CommentId) => void;
@@ -57,7 +61,6 @@ export function SvgCanvas({
   setHistory: React.Dispatch<React.SetStateAction<HistoryState>>;
   setSelection: React.Dispatch<React.SetStateAction<SelectionState>>;
 }) {
-  const [activeTool, setActiveTool] = useState<CreationTool | "Select">("Select");
   const [activeGuides, setActiveGuides] = useState<readonly SnapGuide[]>([]);
   const [contextMenuPosition, setContextMenuPosition] = useState<{ x: number; y: number } | null>(null);
   const [snapSettings, setSnapSettings] = useState<SnapSettings>(defaultSnapSettings);
@@ -143,7 +146,7 @@ export function SvgCanvas({
       const operation = createNodeOperation(activeTool, documentPointFromEvent(event), parentId, toolIds.current, metadata("create"));
       commit(createTransaction("tx_create_node", `Create ${activeTool}`, [operation]));
       setSelection(selectOne(operation.payload.node.id));
-      setActiveTool("Select");
+      onActiveToolChange("Select");
       return;
     }
 
@@ -347,25 +350,6 @@ export function SvgCanvas({
         <PresenceOverlay design={design} presences={remotePresences} />
         <SelectionOverlay design={design} selectedIds={selection.selectedIds} />
       </svg>
-
-      <div className="absolute right-4 top-16 grid max-h-[calc(100%-120px)] w-44 gap-1 overflow-auto rounded border border-desk-line bg-white/95 p-2 shadow-panel" data-testid="creation-tools">
-        <button
-          className={`rounded px-2 py-1.5 text-left text-xs font-semibold ${activeTool === "Select" ? "bg-desk-ink text-white" : "hover:bg-slate-100"}`}
-          onClick={() => setActiveTool("Select")}
-        >
-          Select
-        </button>
-        {creationTools.map((tool) => (
-          <button
-            aria-label={`Create ${tool}`}
-            className={`rounded px-2 py-1.5 text-left text-xs font-semibold ${activeTool === tool ? "bg-teal-700 text-white" : "hover:bg-slate-100"}`}
-            key={tool}
-            onClick={() => setActiveTool(tool)}
-          >
-            {tool}
-          </button>
-        ))}
-      </div>
 
       <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded border border-desk-line bg-white/95 p-1 shadow-panel">
         <button aria-label="Zoom out" className="flex size-8 items-center justify-center rounded hover:bg-slate-100" onClick={() => zoom(0.85)}>

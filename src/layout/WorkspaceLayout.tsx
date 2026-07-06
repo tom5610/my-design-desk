@@ -2,12 +2,13 @@ import {
   Circle,
   Component,
   Eye,
+  History,
   Layers,
   MessageSquare,
   MousePointer2,
   Play,
+  RectangleHorizontal,
   Share2,
-  SlidersHorizontal,
   Sparkles,
   Square,
   Type,
@@ -42,13 +43,21 @@ import { createRestoreSnapshotTransaction, createSnapshotTransaction, VersionHis
 import { branchHistoryFromReplay, ReplayPanel } from "../replay";
 import { createPrototypeLinkTransaction, findContainingFrameId, navigatePrototype, PrototypePanel } from "../prototype";
 import { PreviewOverlay } from "../preview";
+import type { CreationTool } from "../tools";
 
-const tools = [
-  { label: "Select", icon: MousePointer2, active: true },
+type CanvasTool = CreationTool | "Select";
+type AdvancedPanel = "comments" | "history" | "replay";
+
+const tools: { label: CanvasTool; icon: typeof MousePointer2 }[] = [
+  { label: "Select", icon: MousePointer2 },
   { label: "Frame", icon: Square },
+  { label: "Rectangle", icon: RectangleHorizontal },
   { label: "Ellipse", icon: Circle },
   { label: "Text", icon: Type },
+  { label: "Button", icon: RectangleHorizontal },
 ];
+
+const moreTools: CreationTool[] = ["Group", "Line", "Image", "Icon", "ChartPlaceholder"];
 
 export function WorkspaceLayout() {
   const initialDesign = useMemo(() => createStarterDesign(), []);
@@ -72,6 +81,8 @@ export function WorkspaceLayout() {
   const [presenceByClient, setPresenceByClient] = useState<Record<string, PresenceState>>({});
   const [previewBackStack, setPreviewBackStack] = useState<NodeId[]>([]);
   const [previewNodeId, setPreviewNodeId] = useState<NodeId | null>(null);
+  const [activePanel, setActivePanel] = useState<AdvancedPanel | null>(null);
+  const [activeTool, setActiveTool] = useState<CanvasTool>("Select");
   const [selection, setSelection] = useState<SelectionState>(emptySelection);
   const [leftTab, setLeftTab] = useState<"layers" | "assets">("layers");
   const opCounter = useRef(0);
@@ -173,6 +184,21 @@ export function WorkspaceLayout() {
     const interval = window.setInterval(() => sendPresenceUpdate(), 500);
     return () => window.clearInterval(interval);
   }, [selection.selectedIds]);
+
+  useEffect(() => {
+    if (!activePanel) {
+      return;
+    }
+
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        closeActivePanel();
+      }
+    }
+
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [activePanel]);
 
   function metadata(kind: string, index = 0): OperationMetadata {
     opCounter.current += 1;
@@ -301,6 +327,7 @@ export function WorkspaceLayout() {
     );
     setActiveCommentId(commentId);
     setCommentMode(false);
+    setActivePanel("comments");
   }
 
   function replyToComment(commentId: CommentId, body: string) {
@@ -374,6 +401,27 @@ export function WorkspaceLayout() {
     });
   }
 
+  function closeActivePanel() {
+    setActivePanel(null);
+    setCommentMode(false);
+  }
+
+  function togglePanel(panel: AdvancedPanel) {
+    setCommentMode(false);
+    setActivePanel((current) => (current === panel ? null : panel));
+  }
+
+  function toggleCommentMode() {
+    setCommentMode((current) => {
+      if (current) {
+        setActivePanel(null);
+        return false;
+      }
+      setActivePanel("comments");
+      return true;
+    });
+  }
+
   return (
     <main
       className="flex h-dvh min-h-[680px] flex-col overflow-hidden bg-desk-canvas text-desk-ink lg:flex-row"
@@ -402,20 +450,28 @@ export function WorkspaceLayout() {
       <section className="flex min-h-0 min-w-0 flex-1 flex-col">
         <TopToolbar
           actorName={actor.name}
+          activePanel={activePanel}
+          activeTool={activeTool}
           collabStatus={collabStatus}
           commentMode={commentMode}
           onlineCount={remotePresences.length + (collabStatus === "connected" ? 1 : 0)}
-          onToggleCommentMode={() => setCommentMode((current) => !current)}
+          onSelectTool={setActiveTool}
+          onToggleCommentMode={toggleCommentMode}
+          onTogglePanel={togglePanel}
           sessionId={sessionId}
         />
         <CanvasShell
           activeCommentId={activeCommentId}
+          activePanel={activePanel}
+          activeTool={activeTool}
           commentFocusKey={commentFocusKey}
           commentMode={commentMode}
           comments={comments}
           history={history}
           lastSequence={lastSequence}
+          onActiveToolChange={setActiveTool}
           onBroadcastOperations={broadcastOperations}
+          onClosePanel={closeActivePanel}
           onCreateComment={createComment}
           onCursorMove={updateCursor}
           onJumpToComment={jumpToComment}
@@ -438,7 +494,7 @@ export function WorkspaceLayout() {
           setSelection={setSelection}
           commentAuthor={commentAuthor}
         />
-        <MobilePanelSummary />
+        <MobilePanelSummary activePanel={activePanel} onTogglePanel={togglePanel} />
         <footer className="flex h-9 shrink-0 items-center justify-between border-t border-desk-line bg-white px-4 text-xs text-desk-muted">
           <span>Session: {sessionId}</span>
           <span>Design Desk local demo</span>
@@ -540,26 +596,34 @@ function LeftPanel({
 }
 
 function TopToolbar({
+  activePanel,
+  activeTool,
   actorName,
   collabStatus,
   commentMode,
   onlineCount,
+  onSelectTool,
   onToggleCommentMode,
+  onTogglePanel,
   sessionId,
 }: {
+  activePanel: AdvancedPanel | null;
+  activeTool: CanvasTool;
   actorName: string;
   collabStatus: "connecting" | "connected" | "offline";
   commentMode: boolean;
   onlineCount: number;
+  onSelectTool: (tool: CanvasTool) => void;
   onToggleCommentMode: () => void;
+  onTogglePanel: (panel: AdvancedPanel) => void;
   sessionId: string;
 }) {
   return (
     <header
-      className="flex h-auto shrink-0 flex-col gap-2 border-b border-desk-line bg-white p-3 sm:h-14 sm:flex-row sm:items-center sm:justify-between sm:px-4 sm:py-0"
+      className="flex h-auto shrink-0 flex-col gap-2 border-b border-desk-line bg-white p-3 sm:px-4"
       data-testid="top-toolbar"
     >
-      <div className="flex items-center justify-between gap-2 sm:justify-start">
+      <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-start">
         <div className="flex items-center gap-2 lg:hidden">
           <div className="flex size-8 items-center justify-center rounded bg-desk-accent text-white">
             <Sparkles size={18} aria-hidden="true" />
@@ -570,26 +634,48 @@ function TopToolbar({
           </div>
         </div>
 
-        <div className="flex items-center gap-1" role="toolbar" aria-label="Canvas tools">
+        <div className="flex max-w-[calc(100vw-2rem)] items-center gap-1 overflow-x-auto sm:max-w-none" role="toolbar" aria-label="Canvas tools">
           {tools.map((tool) => {
             const Icon = tool.icon;
+            const selected = activeTool === tool.label;
             return (
               <button
-                aria-label={tool.label}
+                aria-label={tool.label === "Select" ? "Select" : `Create ${tool.label}`}
+                aria-pressed={selected}
                 className={`flex size-9 items-center justify-center rounded ${
-                  tool.active ? "bg-desk-ink text-white" : "text-slate-600 hover:bg-slate-100"
+                  selected ? "bg-desk-ink text-white" : "text-slate-600 hover:bg-slate-100"
                 }`}
                 key={tool.label}
-                title={tool.label}
+                onClick={() => onSelectTool(tool.label)}
+                title={tool.label === "Select" ? "Select" : `Create ${tool.label}`}
+                type="button"
               >
                 <Icon size={17} aria-hidden="true" />
               </button>
             );
           })}
+          <select
+            aria-label="More creation tools"
+            className={`h-9 rounded border border-desk-line px-2 text-xs font-semibold outline-none ${moreTools.includes(activeTool as CreationTool) ? "bg-desk-ink text-white" : "bg-white text-slate-700"}`}
+            onChange={(event) => {
+              if (event.target.value) {
+                onSelectTool(event.target.value as CreationTool);
+              }
+            }}
+            title="More creation tools"
+            value={moreTools.includes(activeTool as CreationTool) ? activeTool : ""}
+          >
+            <option value="">More</option>
+            {moreTools.map((tool) => (
+              <option key={tool} value={tool}>
+                {tool}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
-      <div className="flex items-center gap-2 overflow-x-auto">
+      <div className="flex items-center gap-2 overflow-x-auto pb-1">
         <div className="flex shrink-0 items-center gap-2 rounded bg-teal-50 px-3 py-2 text-xs font-semibold text-teal-800" data-testid="demo-mode-banner">
           <Sparkles size={14} aria-hidden="true" />
           Demo mode
@@ -599,7 +685,7 @@ function TopToolbar({
           {collabStatus === "connected" ? `${onlineCount} online` : "Offline"}
           <span className="text-desk-muted">{actorName}</span>
         </button>
-        <button className="flex shrink-0 items-center gap-2 rounded border border-desk-line px-3 py-2 text-xs font-medium">
+        <button className="flex shrink-0 items-center gap-2 rounded border border-desk-line px-3 py-2 text-xs font-medium" type="button">
           <Eye size={15} aria-hidden="true" />
           Preview
         </button>
@@ -612,6 +698,24 @@ function TopToolbar({
           <MessageSquare size={15} aria-hidden="true" />
           Comment
         </button>
+        <button
+          aria-pressed={activePanel === "history"}
+          className={`flex shrink-0 items-center gap-2 rounded border border-desk-line px-3 py-2 text-xs font-medium ${activePanel === "history" ? "bg-desk-ink text-white" : ""}`}
+          onClick={() => onTogglePanel("history")}
+          type="button"
+        >
+          <History size={15} aria-hidden="true" />
+          History
+        </button>
+        <button
+          aria-pressed={activePanel === "replay"}
+          className={`flex shrink-0 items-center gap-2 rounded border border-desk-line px-3 py-2 text-xs font-medium ${activePanel === "replay" ? "bg-desk-ink text-white" : ""}`}
+          onClick={() => onTogglePanel("replay")}
+          type="button"
+        >
+          <Play size={15} aria-hidden="true" />
+          Replay
+        </button>
         <a className="flex shrink-0 items-center gap-2 rounded bg-desk-accent px-3 py-2 text-xs font-semibold text-white" href={`?sessionId=${encodeURIComponent(sessionId)}`}>
           <Share2 size={15} aria-hidden="true" />
           Share
@@ -623,13 +727,17 @@ function TopToolbar({
 
 function CanvasShell({
   activeCommentId,
+  activePanel,
+  activeTool,
   commentAuthor,
   commentFocusKey,
   commentMode,
   comments,
   history,
   lastSequence,
+  onActiveToolChange,
   onBroadcastOperations,
+  onClosePanel,
   onCreateComment,
   onCursorMove,
   onJumpToComment,
@@ -652,13 +760,17 @@ function CanvasShell({
   setSelection,
 }: {
   activeCommentId: CommentId | null;
+  activePanel: AdvancedPanel | null;
+  activeTool: CanvasTool;
   commentAuthor: string;
   commentFocusKey: number;
   commentMode: boolean;
   comments: readonly CommentThread[];
   history: HistoryState;
   lastSequence: number;
+  onActiveToolChange: (tool: CanvasTool) => void;
   onBroadcastOperations: (operations: readonly DesignOperation[]) => void;
+  onClosePanel: () => void;
   onCreateComment: (point: Point, nodeId: NodeId) => void;
   onCursorMove: (point: Point) => void;
   onJumpToComment: (commentId: CommentId) => void;
@@ -691,10 +803,12 @@ function CanvasShell({
       </div>
       <SvgCanvas
         activeCommentId={activeCommentId}
+        activeTool={activeTool}
         commentFocusKey={commentFocusKey}
         commentMode={commentMode}
         comments={comments}
         history={history}
+        onActiveToolChange={onActiveToolChange}
         onBroadcastOperations={onBroadcastOperations}
         onCreateComment={onCreateComment}
         onCursorMove={onCursorMove}
@@ -704,17 +818,20 @@ function CanvasShell({
         setHistory={setHistory}
         setSelection={setSelection}
       />
-      <CommentsPanel
-        activeCommentId={activeCommentId}
-        author={commentAuthor}
-        comments={comments}
-        onAuthorChange={setCommentAuthor}
-        onJumpToComment={onJumpToComment}
-        onReply={onReplyToComment}
-        onResolve={onResolveComment}
-      />
-      <VersionHistoryPanel design={history.present} onCreateSnapshot={onCreateSnapshot} onRestoreSnapshot={onRestoreSnapshot} />
-      <ReplayPanel history={history} initialDesign={history.past.length === 0 ? history.present : createStarterDesign()} onBranch={onBranchFromReplay} />
+      {activePanel === "comments" ? (
+        <CommentsPanel
+          activeCommentId={activeCommentId}
+          author={commentAuthor}
+          comments={comments}
+          onAuthorChange={setCommentAuthor}
+          onClose={onClosePanel}
+          onJumpToComment={onJumpToComment}
+          onReply={onReplyToComment}
+          onResolve={onResolveComment}
+        />
+      ) : null}
+      {activePanel === "history" ? <VersionHistoryPanel design={history.present} onClose={onClosePanel} onCreateSnapshot={onCreateSnapshot} onRestoreSnapshot={onRestoreSnapshot} /> : null}
+      {activePanel === "replay" ? <ReplayPanel history={history} initialDesign={history.past.length === 0 ? history.present : createStarterDesign()} onBranch={onBranchFromReplay} onClose={onClosePanel} /> : null}
       {previewNodeId ? <PreviewOverlay design={history.present} frameId={previewNodeId} onNavigate={onPreviewNavigate} /> : null}
       <PrototypePanel
         design={history.present}
@@ -729,21 +846,37 @@ function CanvasShell({
   );
 }
 
-function MobilePanelSummary() {
+function MobilePanelSummary({
+  activePanel,
+  onTogglePanel,
+}: {
+  activePanel: AdvancedPanel | null;
+  onTogglePanel: (panel: AdvancedPanel) => void;
+}) {
+  const items: { label: string; panel: AdvancedPanel; icon: typeof MessageSquare }[] = [
+    { label: "Comments", panel: "comments", icon: MessageSquare },
+    { label: "History", panel: "history", icon: History },
+    { label: "Replay", panel: "replay", icon: Play },
+  ];
+
   return (
     <div className="grid shrink-0 grid-cols-3 border-t border-desk-line bg-white text-xs lg:hidden" data-testid="mobile-panel-summary">
-      <button className="flex items-center justify-center gap-2 px-2 py-3 font-medium">
-        <Layers size={15} aria-hidden="true" />
-        Layers
-      </button>
-      <button className="flex items-center justify-center gap-2 border-x border-desk-line px-2 py-3 font-medium">
-        <SlidersHorizontal size={15} aria-hidden="true" />
-        Inspect
-      </button>
-      <button className="flex items-center justify-center gap-2 px-2 py-3 font-medium">
-        <Play size={15} aria-hidden="true" />
-        Replay
-      </button>
+      {items.map((item, index) => {
+        const Icon = item.icon;
+        const active = activePanel === item.panel;
+        return (
+          <button
+            aria-pressed={active}
+            className={`flex items-center justify-center gap-2 px-2 py-3 font-medium ${index === 1 ? "border-x border-desk-line" : ""} ${active ? "bg-desk-ink text-white" : ""}`}
+            key={item.panel}
+            onClick={() => onTogglePanel(item.panel)}
+            type="button"
+          >
+            <Icon size={15} aria-hidden="true" />
+            {item.label}
+          </button>
+        );
+      })}
     </div>
   );
 }

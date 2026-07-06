@@ -102,17 +102,40 @@ export function createDesignDeskServer(options: DesignDeskServerOptions): Design
     const sessionId = parseSessionId(request.url);
     sockets.set(socket, { sessionId });
 
-    void store.loadSession(sessionId).then((session) => {
-      send(socket, {
-        type: "server.ready",
-        sessionId,
-        nextSequence: session.nextSequence,
-        operationCount: session.operations.length,
-      });
-    });
+    void store
+      .loadSession(sessionId)
+      .then((session) => {
+        send(socket, {
+          type: "server.ready",
+          sessionId,
+          nextSequence: session.nextSequence,
+          operationCount: session.operations.length,
+        });
+      })
+      .catch(() => socket.close(1011, "Session unavailable"));
 
     socket.on("message", (rawMessage) => {
-      void handleClientMessage(store, socket, JSON.parse(decodeMessage(rawMessage)) as ClientMessage);
+      let message: ClientMessage;
+      try {
+        message = JSON.parse(decodeMessage(rawMessage)) as ClientMessage;
+      } catch {
+        socket.close(1003, "Invalid JSON");
+        return;
+      }
+
+      void handleClientMessage(store, socket, message).catch((error: unknown) => {
+        if (message.type === "operation.submit") {
+          send(socket, {
+            type: "operation.rejected",
+            sessionId: message.sessionId,
+            opId: message.operation.opId,
+            reason: error instanceof Error ? error.message : "Operation rejected",
+          });
+          return;
+        }
+
+        socket.close(1011, "Message handling failed");
+      });
     });
 
     socket.on("close", () => {

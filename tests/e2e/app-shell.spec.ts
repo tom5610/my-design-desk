@@ -12,6 +12,9 @@ test("loads the professional workspace shell on desktop", async ({ page }) => {
   await expect(page.getByTestId("demo-project-picker")).toBeVisible();
   await expect(page.getByTestId("demo-mode-banner")).toBeVisible();
   await expect(page.getByRole("link", { name: "Share" })).toHaveAttribute("href", /sessionId=local-demo/);
+  await expect(page.getByTestId("comments-panel")).toHaveCount(0);
+  await expect(page.getByTestId("version-history-panel")).toHaveCount(0);
+  await expect(page.getByTestId("replay-panel")).toHaveCount(0);
   await expect(page.getByTestId("scene-svg")).toBeVisible();
   await expect(page.locator('[data-node-name="Hero headline"]')).toBeVisible();
 });
@@ -25,6 +28,13 @@ test("keeps the shell usable on mobile width", async ({ page }) => {
   await expect(page.getByTestId("canvas-shell")).toBeVisible();
   await expect(page.getByTestId("mobile-panel-summary")).toBeVisible();
   await expect(page.getByTestId("scene-svg")).toBeVisible();
+  await expect(page.getByTestId("comments-panel")).toHaveCount(0);
+  await expect(page.getByTestId("version-history-panel")).toHaveCount(0);
+  await expect(page.getByTestId("replay-panel")).toHaveCount(0);
+
+  await page.getByTestId("mobile-panel-summary").getByRole("button", { name: "Replay" }).click();
+  await expect(page.getByTestId("replay-panel")).toBeVisible();
+  await expect(page.getByTestId("comments-panel")).toHaveCount(0);
 
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
   expect(overflow).toBe(false);
@@ -130,7 +140,10 @@ test("creates, replies to, resolves, and jumps to a comment pin", async ({ page 
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/");
 
+  await page.getByRole("button", { name: "Comment" }).click();
   await expect(page.getByTestId("comments-panel")).toBeVisible();
+  await page.getByLabel("Close comments").click();
+  await expect(page.getByTestId("comments-panel")).toHaveCount(0);
   await page.getByRole("button", { name: "Comment" }).click();
   await page.getByTestId("scene-svg").click({ position: { x: 620, y: 320 } });
 
@@ -177,6 +190,7 @@ test("creates and restores a local version snapshot", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/");
 
+  await page.getByRole("button", { name: "History" }).click();
   await expect(page.getByTestId("version-history-panel")).toBeVisible();
   await page.getByLabel("Snapshot name").fill("Checkpoint");
   await page.getByLabel("Create snapshot").click();
@@ -196,7 +210,11 @@ test("replays history and branches from an earlier step", async ({ page }) => {
 
   await page.locator('[data-node-name="Hero headline"]').click();
   await page.getByTestId("svg-canvas").press("ArrowRight");
+  await page.getByTestId("top-toolbar").getByRole("button", { name: "Replay" }).click();
   await expect(page.getByTestId("replay-panel")).toContainText("Step 1 / 1");
+  await page.keyboard.press("Escape");
+  await expect(page.getByTestId("replay-panel")).toHaveCount(0);
+  await page.getByTestId("top-toolbar").getByRole("button", { name: "Replay" }).click();
   await expect(page.getByTestId("replay-current-step")).toContainText("Move selection");
 
   await page.getByLabel("Replay step back").click();

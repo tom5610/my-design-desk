@@ -1,4 +1,4 @@
-import { GitBranch, Pause, Play, SkipBack, SkipForward } from "lucide-react";
+import { GitBranch, Pause, Play, SkipBack, SkipForward, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import type { DesignFile } from "../model";
@@ -9,10 +9,12 @@ export function ReplayPanel({
   history,
   initialDesign,
   onBranch,
+  onClose,
 }: {
   history: HistoryState;
   initialDesign: DesignFile;
   onBranch: (step: number) => void;
+  onClose: () => void;
 }) {
   const labels = useMemo(() => replayLabels(history.past), [history.past]);
   const [playing, setPlaying] = useState(false);
@@ -44,12 +46,17 @@ export function ReplayPanel({
   const current = labels[step - 1];
 
   return (
-    <aside className="absolute bottom-16 left-4 z-10 w-[320px] rounded border border-desk-line bg-white/95 shadow-panel" data-testid="replay-panel">
+    <aside className="absolute left-4 right-4 top-20 z-20 rounded border border-desk-line bg-white/95 shadow-panel sm:bottom-16 sm:left-4 sm:right-auto sm:top-auto sm:w-[320px]" data-testid="replay-panel">
       <div className="flex items-center justify-between border-b border-desk-line px-3 py-2">
         <h2 className="text-sm font-semibold">Replay</h2>
-        <span className="text-xs font-semibold text-desk-muted">
-          Step {step} / {labels.length}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold text-desk-muted">
+            Step {step} / {labels.length}
+          </span>
+          <button aria-label="Close replay" className="flex size-7 items-center justify-center rounded hover:bg-slate-100" onClick={onClose} type="button">
+            <X size={14} aria-hidden="true" />
+          </button>
+        </div>
       </div>
       <div className="space-y-3 p-3">
         <input

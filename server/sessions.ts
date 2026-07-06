@@ -40,7 +40,9 @@ export class LocalSessionStore {
       this.cache.set(sessionId, session);
       return session;
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT" && error instanceof SyntaxError) {
+        await this.quarantineCorruptSession(filePath);
+      } else if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
         throw error;
       }
     }
@@ -97,5 +99,13 @@ export class LocalSessionStore {
     await writeFile(tempPath, `${JSON.stringify(session, null, 2)}\n`, "utf8");
     await rename(tempPath, filePath);
     this.cache.set(session.sessionId, session);
+  }
+
+  private async quarantineCorruptSession(filePath: string) {
+    try {
+      await rename(filePath, `${filePath}.corrupt-${Date.now()}`);
+    } catch {
+      // Fall through to a fresh starter session even if quarantine fails.
+    }
   }
 }

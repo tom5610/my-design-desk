@@ -2,9 +2,9 @@
 
 ## Current State
 
-- Current milestone: complete - all 21 planned milestones
-- Previous milestone: 21 - Demo Projects, Polish, Performance, Final Hardening
-- Status: Milestone 21 complete and committed; final verification passed
+- Current milestone: complete - UX hardening follow-up
+- Previous milestone: complete - all 21 planned milestones
+- Status: UX hardening complete; verification passed
 - Source spec: `docs/prompt.md`
 - Milestone contract: `docs/plans.md`
 - Runbook: `docs/implement.md`
@@ -662,6 +662,36 @@ Notes:
 - Final runtime remains fully local through `npm run dev`.
 - No further planned milestone remains after the Milestone 21 commit.
 
+## UX Hardening Follow-Up
+
+Status: complete
+
+Scope completed:
+
+- Conducted UX hardening around five critical use cases: first open/orientation, canvas creation/editing, comments review, version/replay recovery, and local collaboration/demo handoff.
+- Made advanced panels canvas-first: comments, version history, and replay are closed by default, opened intentionally, closeable with panel buttons, and dismissible with Escape.
+- Wired top toolbar creation controls to the actual canvas creation state so visible tools are no longer decorative.
+- Replaced the always-visible floating creation palette with primary creation buttons plus a compact more-tools menu.
+- Updated mobile panel access to Comments, History, and Replay so the bottom controls open one advanced panel sheet at a time.
+- Hardened local session loading and WebSocket message parsing so malformed local data or client messages do not crash the collaboration server.
+
+Verification:
+
+- `npm run lint` passed.
+- `npm run typecheck` passed.
+- `npm test` passed: 21 files, 53 tests.
+- `npm run build` passed with Vite `8.1.3`.
+- `npm run test:e2e -- --workers=1` passed: 14 Playwright tests.
+- `curl -fsS http://127.0.0.1:5173/` passed.
+- `curl -fsS http://127.0.0.1:8787/health` passed with `{"ok":true,"service":"design-desk-server"}`.
+- Desktop screenshot captured at `/tmp/design-desk-ux-final-desktop-3.png`.
+- Mobile screenshot captured at `/tmp/design-desk-ux-final-mobile-2.png`.
+
+Notes:
+
+- The local dev server quarantined a malformed gitignored session file as `data/sessions/local-demo.json.corrupt-1783302072716` and created a fresh `local-demo.json`. These files are runtime data and remain outside the tracked diff.
+- Mobile keeps primary advanced panels in the bottom navigation. The top action row can still scroll horizontally for secondary commands.
+
 ## Decisions Log
 
 | Date | Decision | Reason |
@@ -695,6 +725,9 @@ Notes:
 | 2026-07-04 | Keep prototype preview state transient and serialize only prototype links. | Preview navigation must demo frame-to-frame flow without polluting export, replay, or canonical scene data. |
 | 2026-07-04 | Generate export files from the canonical scene model instead of renderer DOM output. | The CLI must work without the UI and produce deterministic React/Tailwind files from serialized input. |
 | 2026-07-04 | Keep final hardening additive around the deterministic spine. | Demo polish, assets, and docs should improve the local demo without changing operation authority late in the build. |
+| 2026-07-06 | Use canvas-first advanced panels. | Comments, version history, and replay should be discoverable but not permanently cover the design surface. |
+| 2026-07-06 | Keep panel visibility and active creation tool as transient UI state. | Closing panels and selecting tools should not affect serialization, replay, export, or the deterministic operation journal. |
+| 2026-07-06 | Quarantine malformed local session JSON and create a fresh starter session. | A corrupted local demo file should not crash `npm run dev` or block the collaboration health endpoint. |
 
 ## Blockers
 
@@ -702,4 +735,4 @@ None.
 
 ## Handoff
 
-All 21 planned milestones are implemented locally. Before final handoff, commit Milestone 21, confirm the final worktree contains only unrelated untracked `METHOD.md`, and start the local app with `npm run dev` for the user-facing URL.
+All 21 planned milestones and the UX hardening follow-up are implemented locally. The app is running at `http://127.0.0.1:5173/`, and the collaboration server health endpoint is available at `http://127.0.0.1:8787/health`.

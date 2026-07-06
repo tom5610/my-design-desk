@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
@@ -105,6 +105,26 @@ describe("LocalSessionStore", () => {
     expect(persisted.nextSequence).toBe(2);
     expect(persisted.operations.map((entry) => entry.sequence)).toEqual([1]);
   });
+
+  it("quarantines malformed session files and starts from a fresh design", async () => {
+    const dataDir = await makeTempDir();
+    const sessionsDir = path.join(dataDir, "sessions");
+    await mkdir(sessionsDir, { recursive: true });
+    await writeFile(path.join(sessionsDir, "local-demo.json"), "{\"sessionId\":", "utf8");
+
+    const store = new LocalSessionStore({ dataDir });
+    const session = await store.loadSession("local-demo");
+    const entries = await readdir(sessionsDir);
+
+    expect(session.sessionId).toBe("local-demo");
+    expect(session.operations).toEqual([]);
+    expect(session.nextSequence).toBe(1);
+    expect(entries.some((entry) => entry.startsWith("local-demo.json.corrupt-"))).toBe(true);
+    expect(JSON.parse(await readFile(path.join(sessionsDir, "local-demo.json"), "utf8"))).toMatchObject({
+      sessionId: "local-demo",
+      nextSequence: 1,
+    });
+  });
 });
 
 describe("Design Desk WebSocket server", () => {
@@ -168,5 +188,34 @@ describe("Design Desk WebSocket server", () => {
     };
 
     expect(serializeDesign(applyOperation(initialA, operation))).toBe(serializeDesign(applyOperation(initialB, operation)));
+  });
+
+  it("closes invalid JSON messages without crashing the server", async () => {
+    const dataDir = await makeTempDir();
+    const server = createDesignDeskServer({ dataDir });
+
+    await new Promise<void>((resolve, reject) => {
+      server.httpServer.once("error", reject);
+      server.httpServer.listen(0, "127.0.0.1", resolve);
+    });
+    const address = server.httpServer.address();
+    const port = typeof address === "object" && address ? address.port : 0;
+
+    let socket: WebSocket | undefined;
+
+    try {
+      socket = await openSocket(`ws://127.0.0.1:${port}/collaboration?sessionId=local-demo`);
+      await nextMessage(socket);
+      const closed = new Promise<{ code: number; reason: string }>((resolve) => {
+        socket?.once("close", (code, reason) => resolve({ code, reason: reason.toString("utf8") }));
+      });
+      socket.send("{");
+
+      await expect(closed).resolves.toMatchObject({ code: 1003, reason: "Invalid JSON" });
+      expect(server.httpServer.listening).toBe(true);
+    } finally {
+      socket?.close();
+      await server.close();
+    }
   });
 });
