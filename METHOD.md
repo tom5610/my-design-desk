@@ -926,3 +926,187 @@ Codex appended this continuation section to `METHOD.md`, covering the `/goal` ex
 **Explanation:**
 
 This keeps the method log current after the long-horizon build completed. The file now documents both the initial AI Builder coaching method and the execution method that carried the app through the final milestones.
+
+## Post-Goal UI/UX Hardening Notes
+
+This section captures the follow-up learning after the long-horizon build completed. The purpose is to show how an AI Builder can use a direct one-shot intelligence prompt to discover product UX gaps, then use Plan Mode to turn those gaps into a decision-complete UX testing and fixing plan.
+
+## Turn 37 - Discover A UX Gap From An App-Usage Question
+
+**AI Builder Prompt:**
+
+```text
+Help me understand how to use the application. Why I can NOT close small windows, e.g. 'Comments', 'Version History', 'Replay', etc.
+```
+
+**Codex Response:**
+
+Codex inspected the workspace layout and panel components, then explained that the issue was not user error. `Comments`, `Version history`, and `Replay` were implemented as always-mounted workspace panels. They had no `open`, `onClose`, or collapsed-state props, so there was no UI state that could close them.
+
+Codex also explained how the panels were intended to be used:
+
+- `Comments`: enable comment mode, click the canvas to create a pin, then reply, resolve/reopen, or jump back to the pin.
+- `Version history`: create named snapshots and restore them.
+- `Replay`: scrub operation history, step through edits, play/pause, and branch from a replay step.
+
+**Explanation:**
+
+This was a useful example of one-shot intelligence prompting after a long-horizon run. The AI Builder did not file a formal bug or provide implementation details. A simple product-usage question surfaced a real UX gap: the app had demo-ready advanced features, but the panels behaved like permanent overlays rather than controllable tools.
+
+The important lesson is that long-horizon verification can prove many engineering properties while still missing everyday usability problems. Playwright covered comments, version history, and replay flows, but it did not ask whether a user could dismiss those panels after using them.
+
+## Turn 38 - Use Plan Mode For A UX/UI Audit And Fix Strategy
+
+**AI Builder Prompt:**
+
+```text
+Act as UX and UI designer, think about critical 5 use cases for the application, then, conduct the UX testing. When issues found, please conduct investigation, make informed decision per durable control system files, and implement fix, then execute the related verification. In addition, please fix the UX gap - close behavior was not implemented.
+```
+
+**Codex Response:**
+
+Codex was in Plan Mode, so it did not immediately mutate files. It first grounded the task in the repo:
+
+- Read the durable control files: `AGENTS.md`, `docs/plans.md`, `docs/implement.md`, and `docs/documentation.md`.
+- Inspected current UI implementation and tests.
+- Ran existing Playwright coverage to understand what was already verified.
+- Captured desktop and mobile screenshots for visual UX evidence.
+- Noted a second issue during testing: a malformed local `data/sessions/local-demo.json` could crash the collaboration server.
+
+Codex identified five critical use cases for the UX audit:
+
+1. First open and orientation.
+2. Canvas creation and editing.
+3. Comments review.
+4. Version history and replay recovery.
+5. Local collaboration and demo handoff.
+
+The audit found these issues:
+
+- Advanced panels were always visible and not closeable.
+- Desktop and mobile layouts were cluttered by simultaneous comments, history, replay, and creation controls.
+- Top-toolbar creation icons looked interactive but were not wired to the actual canvas creation state.
+- Mobile bottom controls were visually present but not functionally meaningful.
+- The collaboration server could fail hard on malformed local session JSON.
+
+Codex then asked one product-tradeoff question and the AI Builder chose:
+
+```text
+Canvas first (Recommended)
+```
+
+That choice became the UX direction: advanced panels should be closed by default, opened intentionally, closeable, and rendered one at a time.
+
+**Proposed Plan Summary:**
+
+```text
+Add canvas-first panel state in WorkspaceLayout.
+Add open/close controls for Comments, Version history, and Replay.
+Add Escape dismissal.
+Wire toolbar creation controls to the actual canvas active tool state.
+Make mobile show one advanced panel sheet at a time.
+Harden local session loading and WebSocket message parsing.
+Add Playwright and server tests.
+Run lint, typecheck, unit tests, build, e2e, local runtime smoke, and screenshots.
+```
+
+**Explanation:**
+
+Plan Mode changed the quality of the work. Without Plan Mode, Codex could have simply added close buttons. That would have fixed the symptom but missed the broader workspace-density and mobile-usability problems.
+
+Plan Mode forced the task through a better sequence:
+
+1. Read the control system.
+2. Inspect current behavior.
+3. Define critical UX use cases.
+4. Gather visual and test evidence.
+5. Identify issues beyond the named symptom.
+6. Ask for the key product direction.
+7. Produce a decision-complete implementation plan.
+
+For AI Builders, the pattern is: use a one-shot intelligence prompt to surface a problem, then use Plan Mode when the fix has product, UX, testing, or architecture tradeoffs.
+
+## Turn 39 - Implement The UX Hardening Plan
+
+**AI Builder Prompt:**
+
+```text
+Implement the plan.
+```
+
+**Codex Response:**
+
+Codex returned to Default mode and implemented the planned UX hardening. It followed the durable control system by checking the worktree, updating `docs/documentation.md` before implementation, making scoped changes, running verification, recording evidence, reviewing the diff, and committing the result.
+
+The implementation changed the app behavior:
+
+- `Comments`, `Version history`, and `Replay` are now closed by default.
+- Each advanced panel opens intentionally from the toolbar or mobile bottom controls.
+- Each advanced panel has a close button.
+- `Escape` closes the active advanced panel.
+- Mobile shows one advanced panel sheet at a time.
+- The top toolbar creation controls now drive the real canvas active tool state.
+- Less common creation tools moved into a compact `More` menu.
+- The collaboration server now quarantines malformed local session JSON and creates a fresh starter session.
+- Invalid WebSocket JSON is rejected without crashing the local server.
+
+**Verification Captured:**
+
+```text
+npm run lint
+npm run typecheck
+npm test
+npm run build
+npm run test:e2e -- --workers=1
+curl -fsS http://127.0.0.1:5173/
+curl -fsS http://127.0.0.1:8787/health
+```
+
+Final test state:
+
+```text
+21 Vitest files passed, 53 tests passed.
+14 Playwright tests passed.
+Web app responded at http://127.0.0.1:5173/.
+Collaboration server health responded at http://127.0.0.1:8787/health.
+Desktop screenshot: /tmp/design-desk-ux-final-desktop-3.png
+Mobile screenshot: /tmp/design-desk-ux-final-mobile-2.png
+```
+
+**Commit:**
+
+```text
+4922d77 fix: improve workspace panel usability
+```
+
+**Explanation:**
+
+This follow-up showed a mature long-horizon workflow after the main build was already complete. The durable control system still mattered: it guided the fix toward local-first behavior, transient UI state for panels/tools, no changes to the frozen prompt, updated evidence in `docs/documentation.md`, and full verification before committing.
+
+The bigger learning is that long-horizon task result notes should include post-build UX findings, not only milestone completion. A completed app can pass tests and still need product-quality review. The AI Builder's job is to keep asking: can a real user understand, control, recover, and continue?
+
+## Pattern Extracted - One-Shot Prompt Plus Plan Mode
+
+**AI Builder Prompt Pattern:**
+
+```text
+First, ask a direct product-usage question to trigger one-shot diagnosis.
+Then, when the issue affects UX, product behavior, or testing strategy, switch to Plan Mode.
+Ask Codex to act as a UX/UI expert, identify critical use cases, test the experience, investigate issues, ground decisions in durable control files, propose a decision-complete plan, and only then implement.
+```
+
+**Reusable Workflow:**
+
+1. Use the app as a user and ask a natural question about confusion or friction.
+2. Let Codex inspect the actual implementation and explain whether the issue is user error, missing UX, or a real bug.
+3. Use Plan Mode for broader UX/UI testing instead of immediately patching the first symptom.
+4. Define 5 critical use cases before deciding what to fix.
+5. Gather evidence from code, tests, screenshots, and runtime checks.
+6. Make one explicit product-direction choice when tradeoffs exist.
+7. Implement only after the plan is decision-complete.
+8. Verify with static checks, unit tests, Playwright, runtime smoke checks, and screenshots.
+9. Record the result in durable notes so future AI Builders learn from both the success and the gap.
+
+**Why This Matters:**
+
+The original long-horizon run proved Codex could build a complex local-first app through milestones. The UX hardening follow-up proved a second lesson: long-horizon completion is not the end of product judgment. One-shot intelligence is useful for quickly discovering gaps, while Plan Mode is useful for turning those gaps into structured UX testing, informed decisions, implementation, and verification.
